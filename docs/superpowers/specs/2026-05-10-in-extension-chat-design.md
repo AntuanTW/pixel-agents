@@ -324,6 +324,6 @@ Outcome: extension fully replaces VS Code terminals for the happy path.
 
 ## Future specs (referenced from project vision, not in this spec)
 
-- `custom-characters-and-furniture.md` — wiring user-supplied PNGs into the asset pipeline.
+- `custom-characters-and-furniture.md` — wiring user-supplied PNGs into the asset pipeline. Source assets at `dbz_assets/` (DBZ Legacy of Goku II rips: 6 character sheets + 1 furniture tileset). Characters need a preprocessing tool to map source frames → the 112×96 / 7-frame × 3-direction layout the loader expects, plus green-screen → transparent and credit-text stripping. Furniture runs through the existing `scripts/0-import-tileset.ts` pipeline as-is.
 - `desks-as-directories.md` — drag-to-assign agent to desk's repo.
 - `kanban-autonomous-pickup.md` — wall-placeable board, idle agents take tasks. Has safety / concurrency design questions.
