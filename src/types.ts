@@ -78,3 +78,63 @@ export interface PersistedAgent {
   leadAgentId?: number;
   teamUsesTmux?: boolean;
 }
+
+// ── SDK-based agents (in-extension chat) ─────────────────────────
+
+export type AgentRole = 'generalist' | 'coder' | 'designer' | 'writer' | 'reviewer';
+
+export type SDKAgentErrorCode =
+  | 'auth_failed'
+  | 'binary_missing'
+  | 'cwd_missing'
+  | 'process_crash'
+  | 'session_not_found'
+  | 'unknown';
+
+/** Runtime state (in-memory only, not persisted). */
+export interface SDKAgentState {
+  id: number;
+  repoPath: string;
+  displayName: string;
+  sessionId: string | null;
+  role: AgentRole;
+  palette: number;
+  hueShift: number;
+  seatId: string | null;
+  createdAt: number;
+  // Runtime fields:
+  currentModel: string | null;
+  inputTokens: number;        // from most recent ResultMessage
+  sessionAllow: Set<string>;  // per-session tool allowlist (cleared on new session)
+  errorCode: SDKAgentErrorCode | null;
+  lastErrorMessage: string | null;
+}
+
+/** What gets written to agents.json. */
+export interface PersistedSDKAgent {
+  id: number;
+  repoPath: string;
+  displayName: string;
+  sessionId: string | null;
+  role: AgentRole;
+  palette: number;
+  hueShift: number;
+  seatId: string | null;
+  createdAt: number;
+}
+
+/** Root structure of agents.json. */
+export interface AgentsFile {
+  version: 1;
+  agents: PersistedSDKAgent[];
+  nextAgentId: number;
+}
+
+/** Chat block types for the webview panel. */
+export type ChatBlock =
+  | { blockType: 'user-text'; id: string; text: string }
+  | { blockType: 'assistant-text'; id: string; text: string }
+  | { blockType: 'thinking'; id: string; text: string }
+  | { blockType: 'tool-use'; id: string; toolId: string; toolName: string; input: unknown; result?: unknown; isError?: boolean }
+  | { blockType: 'error'; id: string; code: SDKAgentErrorCode; message: string }
+  | { blockType: 'queued'; id: string; text: string };
