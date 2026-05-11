@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import type { ChatBlock, SDKAgentErrorCode } from '../../../src/types.js';
 
 const styles = {
@@ -25,7 +26,7 @@ const styles = {
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
     fontSize: 12,
-    background: 'rgba(255, 255, 255, 0.04)',
+    background: 'transparent',
     borderLeft: '2px solid var(--pixel-accent)',
     color: 'var(--pixel-text-dim)',
   },
@@ -34,9 +35,9 @@ const styles = {
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
     fontSize: 12,
-    background: 'rgba(255, 0, 0, 0.1)',
-    borderLeft: '2px solid #ff4444',
-    color: '#ff6666',
+    background: 'transparent',
+    borderLeft: '2px solid var(--color-danger)',
+    color: 'var(--color-status-error)',
   },
   queued: {
     padding: '4px 8px',

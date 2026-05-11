@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+
+import { DEFAULT_CONTEXT_LIMIT,MODEL_CONTEXT_LIMITS } from '../../../src/constants.js';
+import type { AgentRole } from '../../../src/types.js';
 import type { AgentChatState } from '../hooks/useChatState.js';
 import { ChatBlockRenderer } from './ChatBlocks.js';
-import { MODEL_CONTEXT_LIMITS, DEFAULT_CONTEXT_LIMIT } from '../../../src/constants.js';
-import type { AgentRole } from '../../../src/types.js';
 
 const panelStyle: React.CSSProperties = {
   position: 'absolute',
@@ -15,7 +16,7 @@ const panelStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   zIndex: 50,
-  boxShadow: '-4px 0px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
 };
 
 const headerStyle: React.CSSProperties = {
@@ -44,7 +45,7 @@ const inputRowStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   flex: 1,
-  background: '#0d0d1a',
+  background: 'var(--color-bg-dark)',
   border: '2px solid var(--pixel-border)',
   padding: '6px 8px',
   fontFamily: 'FS Pixel Sans, monospace',
@@ -59,9 +60,9 @@ const sendBtnStyle: React.CSSProperties = {
   padding: '6px 12px',
   fontFamily: 'FS Pixel Sans, monospace',
   fontSize: 13,
-  color: '#fff',
+  color: 'var(--color-text)',
   cursor: 'pointer',
-  boxShadow: '2px 2px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
 };
 
 interface ChatPanelProps {
@@ -111,14 +112,14 @@ function Inspector({ agent, chatState, branch, onInterrupt, onRoleChange, agentI
           <div>
             Role:{' '}
             <select value={agent.role} onChange={(e) => onRoleChange?.(e.target.value as AgentRole)}
-              style={{ marginLeft: 6, background: 'var(--pixel-bg)', color: 'var(--pixel-text)', border: '1px solid var(--pixel-border)', fontFamily: 'inherit', fontSize: 10 }}>
+              style={{ marginLeft: 6, background: 'var(--pixel-bg)', color: 'var(--pixel-text)', border: '1px solid var(--pixel-border)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 10 }}>
               {(['generalist', 'coder', 'designer', 'writer', 'reviewer'] as AgentRole[]).map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
           <button onClick={() => onInterrupt(agentId)} disabled={!isStreaming}
-            style={{ marginTop: 4, border: '2px solid var(--pixel-border)', padding: '2px 6px', cursor: isStreaming ? 'pointer' : 'default', background: 'var(--pixel-bg)', color: isStreaming ? '#ff6666' : 'var(--pixel-text-dim)', fontFamily: 'inherit', fontSize: 10, alignSelf: 'flex-start' }}>
+            style={{ marginTop: 4, border: '2px solid var(--pixel-border)', padding: '2px 6px', cursor: isStreaming ? 'pointer' : 'default', background: 'var(--pixel-bg)', color: isStreaming ? 'var(--color-status-error)' : 'var(--pixel-text-dim)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 10, alignSelf: 'flex-start' }}>
             ⏹ Interrupt
           </button>
         </div>
@@ -164,7 +165,7 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
           {isStreaming && (
             <button
               onClick={() => onInterrupt(agentId)}
-              style={{ background: '#ff4444', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}
+              style={{ background: 'var(--color-danger)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}
             >
               Stop
             </button>
@@ -191,12 +192,12 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
 
       {/* Permission prompt */}
       {permission && (
-        <div style={{ padding: '6px 8px', background: 'rgba(255, 165, 0, 0.1)', borderBottom: '2px solid #ff8c00', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: '#ff8c00' }}>
+        <div style={{ padding: '6px 8px', background: 'var(--color-bg-dark)', borderBottom: '2px solid var(--color-warning)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--color-warning)' }}>
           <div style={{ marginBottom: 4 }}>Allow <strong>{permission.toolName}</strong>?</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName)} style={{ background: '#22aa44', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
-            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName, true)} style={{ background: '#2288cc', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Always</button>
-            <button onClick={() => onDeny(agentId, permission.requestId, permission.toolName)} style={{ background: '#ff4444', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-status-success)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName, true)} style={{ background: 'var(--color-status-active)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Always</button>
+            <button onClick={() => onDeny(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-danger)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
           </div>
         </div>
       )}

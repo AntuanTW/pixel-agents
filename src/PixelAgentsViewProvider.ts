@@ -21,6 +21,9 @@ import {
   sendExistingAgents,
   sendLayout,
 } from './agentManager.js';
+import type { AgentRunnerEvent } from './agentRunner.js';
+import { AgentRunner } from './agentRunner.js';
+import { allocateNextAgentId, readAgentsFile, removePersistedAgent, upsertAgent } from './agentsPersistence.js';
 import type { LoadedAssets, LoadedCharacterSprites } from './assetLoader.js';
 import {
   loadCharacterSprites,
@@ -47,6 +50,7 @@ import {
   LAYOUT_REVISION_KEY,
   WORKSPACE_KEY_AGENT_SEATS,
 } from './constants.js';
+import { CHAT_EVENT_BUFFER_MAX } from './constants.js';
 import {
   adoptExternalSessionFromHook,
   dismissedJsonlFiles,
@@ -62,14 +66,10 @@ import {
 } from './fileWatcher.js';
 import type { LayoutWatcher } from './layoutPersistence.js';
 import { readLayoutFromFile, watchLayoutFile, writeLayoutToFile } from './layoutPersistence.js';
-import { setHookProvider } from './transcriptParser.js';
-import { AgentRunner } from './agentRunner.js';
-import type { AgentRunnerEvent } from './agentRunner.js';
-import { allocateNextAgentId, readAgentsFile, removePersistedAgent, upsertAgent } from './agentsPersistence.js';
 import { pickRepo } from './repoPicker.js';
 import { getTranscriptPath, loadTranscript } from './transcriptLoader.js';
+import { setHookProvider } from './transcriptParser.js';
 import type { AgentRole, AgentState, SDKAgentState } from './types.js';
-import { CHAT_EVENT_BUFFER_MAX } from './constants.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
   nextAgentId = { current: 1 };

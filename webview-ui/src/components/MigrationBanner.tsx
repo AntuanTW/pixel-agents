@@ -5,28 +5,28 @@ const bannerStyle: React.CSSProperties = {
   bottom: 8,
   left: '50%',
   transform: 'translateX(-50%)',
-  background: '#1a1a2e',
-  border: '2px solid #ff8c00',
+  background: 'var(--color-bg)',
+  border: '2px solid var(--color-warning)',
   padding: '8px 14px',
   fontFamily: 'FS Pixel Sans, monospace',
   fontSize: 13,
-  color: '#ff8c00',
+  color: 'var(--color-warning)',
   zIndex: 60,
-  boxShadow: '2px 2px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
   display: 'flex',
   alignItems: 'center',
   gap: 10,
 };
 
 const buttonStyle: React.CSSProperties = {
-  background: '#ff8c00',
+  background: 'var(--color-warning)',
   border: '2px solid var(--pixel-border)',
   padding: '4px 10px',
   fontFamily: 'FS Pixel Sans, monospace',
   fontSize: 12,
-  color: '#fff',
+  color: 'var(--color-text)',
   cursor: 'pointer',
-  boxShadow: '2px 2px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
 };
 
 const dismissStyle: React.CSSProperties = {

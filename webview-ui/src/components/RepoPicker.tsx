@@ -3,7 +3,7 @@ import React from 'react';
 const overlayStyle: React.CSSProperties = {
   position: 'absolute',
   inset: 0,
-  background: 'rgba(0, 0, 0, 0.7)',
+  background: 'var(--color-bg-dark)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -16,7 +16,7 @@ const modalStyle: React.CSSProperties = {
   padding: 20,
   minWidth: 360,
   maxWidth: 480,
-  boxShadow: '4px 4px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
 };
 
 const titleStyle: React.CSSProperties = {
@@ -50,17 +50,16 @@ const buttonStyle: React.CSSProperties = {
   padding: '8px 12px',
   fontFamily: 'FS Pixel Sans, monospace',
   fontSize: 13,
-  color: '#fff',
+  color: 'var(--color-text)',
   cursor: 'pointer',
   marginTop: 10,
-  boxShadow: '2px 2px 0px #0a0a14',
+  boxShadow: '2px 2px 0px var(--color-bg-dark)',
 };
 
 const cancelStyle: React.CSSProperties = {
   ...buttonStyle,
   background: 'transparent',
   color: 'var(--pixel-text-dim)',
-  boxShadow: 'none',
 };
 
 interface RepoPickerProps {
@@ -87,7 +86,7 @@ export function RepoPicker({ recentRepos, onPick, onBrowse, onCancel }: RepoPick
                   key={repo}
                   style={itemStyle}
                   onClick={() => onPick(repo)}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-thumb)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   {repo.split('/').pop() || repo}

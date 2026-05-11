@@ -1,3 +1,4 @@
+import { DEFAULT_CONTEXT_LIMIT,MODEL_CONTEXT_LIMITS } from '../../../../src/constants.js';
 import type { ColorValue } from '../../components/ui/types.js';
 import {
   BUBBLE_FADE_DURATION_SEC,
@@ -51,7 +52,6 @@ import { CharacterState, TILE_SIZE, TileType } from '../types.js';
 import { getWallInstances, hasWallSprites, wallColorToHex } from '../wallTiles.js';
 import { getCharacterSprite } from './characters.js';
 import { renderMatrixEffect } from './matrixEffect.js';
-import { MODEL_CONTEXT_LIMITS, DEFAULT_CONTEXT_LIMIT } from '../../../../src/constants.js';
 
 // ── Render functions ────────────────────────────────────────────
 
@@ -220,8 +220,8 @@ export function renderScene(
           const barW = cached.width;
           const barH = Math.max(1, zoom);
           const barY = drawY - barH - zoom * (rIcon ? 7 : 3);
-          const color = pct < 0.5 ? '#44cc44' : pct < 0.8 ? '#ccaa22' : '#cc3333';
-          c.fillStyle = '#222';
+          const color = pct < 0.5 ? 'var(--color-status-success)' : pct < 0.8 ? 'var(--color-warning)' : 'var(--color-danger)';
+          c.fillStyle = 'var(--color-bg-dark)';
           c.fillRect(drawX, barY, barW, barH);
           c.fillStyle = color;
           c.fillRect(drawX, barY, Math.round(barW * pct), barH);

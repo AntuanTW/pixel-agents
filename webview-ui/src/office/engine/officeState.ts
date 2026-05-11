@@ -1,3 +1,4 @@
+import type { PersistedSDKAgent } from '../../../../src/types.js';
 import {
   AUTO_ON_FACING_DEPTH,
   AUTO_ON_SIDE_DEPTH,
@@ -30,7 +31,6 @@ import type {
   Seat,
   TileType as TileTypeVal,
 } from '../types.js';
-import type { PersistedSDKAgent } from '../../../../src/types.js';
 import { CharacterState, Direction, MATRIX_EFFECT_DURATION, TILE_SIZE } from '../types.js';
 import { createCharacter, updateCharacter } from './characters.js';
 import { matrixEffectSeeds } from './matrixEffect.js';

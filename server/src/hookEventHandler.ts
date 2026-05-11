@@ -277,7 +277,7 @@ export class HookEventHandler {
     // route directly by agent ID without maintaining a session_id → agent_id mapping.
     let agentId: number | undefined;
     const pixelAgentId = event.pixel_agents_id;
-    if (pixelAgentId != null && typeof pixelAgentId === 'number' && this.agents.has(pixelAgentId)) {
+    if (typeof pixelAgentId === 'number' && this.agents.has(pixelAgentId)) {
       agentId = pixelAgentId;
     } else {
       agentId = this.sessionToAgentId.get(event.session_id);

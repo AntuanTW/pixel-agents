@@ -1,10 +1,10 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const { query: sdkQuery } = require('@anthropic-ai/claude-agent-sdk') as {
   query: (params: { prompt: string; options?: SDKOptions }) => SDKQuery;
 };
 
-import { ROLE_PROMPTS, SAFE_TOOLS } from './constants.js';
 import { updateAgentSessionId } from './agentsPersistence.js';
+import { ROLE_PROMPTS, SAFE_TOOLS } from './constants.js';
 import type { PersistedSDKAgent, SDKAgentErrorCode, SDKAgentState } from './types.js';
 
 // ── Local SDK type declarations ───────────────────────────────────────────────

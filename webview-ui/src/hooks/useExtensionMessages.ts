@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import type { ChatBlock, PersistedSDKAgent, SDKAgentErrorCode } from '../../../src/types.js';
 import { playDoneSound, playPermissionSound, setSoundEnabled } from '../notificationSound.js';
-import { useChatState } from './useChatState.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { setFloorSprites } from '../office/floorTiles.js';
 import { buildDynamicCatalog } from '../office/layout/furnitureCatalog.js';
@@ -11,7 +11,7 @@ import { extractToolName } from '../office/toolUtils.js';
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
 import { vscode } from '../vscodeApi.js';
-import type { ChatBlock, PersistedSDKAgent, SDKAgentErrorCode } from '../../../src/types.js';
+import { useChatState } from './useChatState.js';
 
 export interface SubagentCharacter {
   id: number;
