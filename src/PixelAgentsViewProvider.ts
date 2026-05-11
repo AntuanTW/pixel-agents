@@ -63,7 +63,13 @@ import {
 import type { LayoutWatcher } from './layoutPersistence.js';
 import { readLayoutFromFile, watchLayoutFile, writeLayoutToFile } from './layoutPersistence.js';
 import { setHookProvider } from './transcriptParser.js';
-import type { AgentState } from './types.js';
+import { AgentRunner } from './agentRunner.js';
+import type { AgentRunnerEvent } from './agentRunner.js';
+import { allocateNextAgentId, readAgentsFile, removePersistedAgent, upsertAgent } from './agentsPersistence.js';
+import { pickRepo } from './repoPicker.js';
+import { getTranscriptPath, loadTranscript } from './transcriptLoader.js';
+import type { AgentState, SDKAgentState } from './types.js';
+import { CHAT_EVENT_BUFFER_MAX } from './constants.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
   nextAgentId = { current: 1 };
@@ -106,9 +112,27 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
   private pixelAgentsServer: PixelAgentsServer | null = null;
   // ServerConfig is not stored as a field; use this.pixelAgentsServer?.getConfig() if needed.
   private hookEventHandler: HookEventHandler | null = null;
+  private _agentRunner: AgentRunner;
+  private _chatEventBuffers = new Map<number, AgentRunnerEvent[]>();
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.initHooks();
+    this._agentRunner = new AgentRunner((event) => {
+      // Buffer events when webview panel is not visible
+      if (event.kind === 'sdkMessage' || event.kind === 'turnDone' || event.kind === 'error' || event.kind === 'queued') {
+        const buffer = this._chatEventBuffers.get(event.agentId) ?? [];
+        if (buffer.length < CHAT_EVENT_BUFFER_MAX) buffer.push(event);
+        this._chatEventBuffers.set(event.agentId, buffer);
+      }
+      // Always forward to webview
+      this.webview?.postMessage({ type: 'agentRunnerEvent', event });
+    });
+    // Restore persisted agents on activation
+    const file = readAgentsFile();
+    for (const persisted of file.agents) {
+      const state = AgentRunner.fromPersistedAgent(persisted);
+      this._agentRunner.addAgent(state);
+    }
   }
 
   private get extensionUri(): vscode.Uri {
@@ -691,6 +715,9 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           }
         })();
         sendExistingAgents(this.agents, this.context, this.webview);
+        // Send SDK agents to webview
+        const sdkAgents = this._agentRunner.getAllAgents().map((a) => this._agentRunner.toPersistedAgent(a));
+        this.webview?.postMessage({ type: 'sdkExistingAgents', agents: sdkAgents });
       } else if (message.type === 'requestDiagnostics') {
         // Send connection diagnostics for all agents to the Debug View
         const diagnostics: Array<Record<string, unknown>> = [];
@@ -787,6 +814,91 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           vscode.window.showInformationMessage('Pixel Agents: Layout imported successfully.');
         } catch {
           vscode.window.showErrorMessage('Pixel Agents: Failed to read or parse layout file.');
+        }
+      } else if (message.type === 'browseRepo') {
+        const result = await pickRepo();
+        if (result) {
+          const id = allocateNextAgentId();
+          const { palette, hueShift } = this._pickDiversePalette();
+          const state: SDKAgentState = {
+            id,
+            repoPath: result.repoPath,
+            displayName: result.displayName,
+            sessionId: null,
+            role: 'generalist',
+            palette,
+            hueShift,
+            seatId: null,
+            createdAt: Date.now(),
+            currentModel: null,
+            inputTokens: 0,
+            sessionAllow: new Set(),
+            errorCode: null,
+            lastErrorMessage: null,
+          };
+          this._agentRunner.addAgent(state);
+          upsertAgent(this._agentRunner.toPersistedAgent(state));
+          this.webview?.postMessage({
+            type: 'sdkAgentCreated',
+            agent: this._agentRunner.toPersistedAgent(state),
+            recentRepos: result.recentRepos,
+          });
+        }
+      } else if (message.type === 'pickRecentRepo') {
+        const { repoPath } = message as { repoPath: string };
+        const displayName = repoPath.split('/').pop() ?? repoPath;
+        const id = allocateNextAgentId();
+        const { palette, hueShift } = this._pickDiversePalette();
+        const state: SDKAgentState = {
+          id,
+          repoPath,
+          displayName,
+          sessionId: null,
+          role: 'generalist',
+          palette,
+          hueShift,
+          seatId: null,
+          createdAt: Date.now(),
+          currentModel: null,
+          inputTokens: 0,
+          sessionAllow: new Set(),
+          errorCode: null,
+          lastErrorMessage: null,
+        };
+        this._agentRunner.addAgent(state);
+        upsertAgent(this._agentRunner.toPersistedAgent(state));
+        this.webview?.postMessage({
+          type: 'sdkAgentCreated',
+          agent: this._agentRunner.toPersistedAgent(state),
+        });
+      } else if (message.type === 'sendPrompt') {
+        const { agentId, text } = message as { agentId: number; text: string };
+        void this._agentRunner.sendPrompt(agentId, text);
+      } else if (message.type === 'interruptAgent') {
+        const { agentId } = message as { agentId: number };
+        this._agentRunner.interrupt(agentId);
+      } else if (message.type === 'removeSdkAgent') {
+        const { agentId } = message as { agentId: number };
+        this._agentRunner.removeAgent(agentId);
+        removePersistedAgent(agentId);
+        this._chatEventBuffers.delete(agentId);
+        this.webview?.postMessage({ type: 'sdkAgentRemoved', agentId });
+      } else if (message.type === 'openChatPanel') {
+        const { agentId } = message as { agentId: number };
+        const agent = this._agentRunner.getAgent(agentId);
+        if (agent) {
+          if (agent.sessionId) {
+            const transcriptPath = getTranscriptPath(agent.repoPath, agent.sessionId);
+            const { blocks, truncatedAt, error } = loadTranscript(transcriptPath);
+            this.webview?.postMessage({ type: 'chatHistory', agentId, blocks, truncatedAt, error });
+          } else {
+            this.webview?.postMessage({ type: 'chatHistory', agentId, blocks: [] });
+          }
+          const buffer = this._chatEventBuffers.get(agentId) ?? [];
+          this._chatEventBuffers.delete(agentId);
+          for (const ev of buffer) {
+            this.webview?.postMessage({ type: 'agentRunnerEvent', event: ev });
+          }
         }
       }
     });
@@ -925,6 +1037,27 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
       console.log('[Pixel Agents] External layout change — pushing to webview');
       this.webview?.postMessage({ type: 'layoutLoaded', layout });
     });
+  }
+
+  /** Pick a diverse palette for a new SDK agent based on existing agents. */
+  private _pickDiversePalette(): { palette: number; hueShift: number } {
+    const paletteCount = 6;
+    const counts = new Array(paletteCount).fill(0) as number[];
+    for (const agent of this._agentRunner.getAllAgents()) {
+      if (agent.palette < paletteCount) counts[agent.palette]++;
+    }
+    const minCount = Math.min(...counts);
+    const available: number[] = [];
+    for (let i = 0; i < paletteCount; i++) {
+      if (counts[i] === minCount) available.push(i);
+    }
+    const palette = available[Math.floor(Math.random() * available.length)];
+    // First unique palettes: no hue shift. Repeated: add hue shift (45-315 degrees).
+    let hueShift = 0;
+    if (minCount > 0) {
+      hueShift = 45 + Math.floor(Math.random() * 270);
+    }
+    return { palette, hueShift };
   }
 
   dispose() {
