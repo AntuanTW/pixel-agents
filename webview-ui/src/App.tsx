@@ -161,14 +161,14 @@ function App() {
     vscode.postMessage({ type: 'interruptAgent', agentId });
   }, []);
 
-  const handleApprove = useCallback((agentId: number, requestId: string) => {
+  const handleApprove = useCallback((agentId: number, requestId: string, toolName: string, always?: boolean) => {
     chatState.clearPermission(agentId);
-    vscode.postMessage({ type: 'permissionResponse', requestId, allowed: true, always: false });
+    vscode.postMessage({ type: 'permissionResponse', agentId, requestId, allowed: true, always: !!always, toolName });
   }, [chatState]);
 
-  const handleDeny = useCallback((agentId: number, requestId: string) => {
+  const handleDeny = useCallback((agentId: number, requestId: string, toolName: string) => {
     chatState.clearPermission(agentId);
-    vscode.postMessage({ type: 'permissionResponse', requestId, allowed: false, always: false });
+    vscode.postMessage({ type: 'permissionResponse', agentId, requestId, allowed: false, always: false, toolName });
   }, [chatState]);
 
   useEffect(() => {

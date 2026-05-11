@@ -3,7 +3,7 @@ const { query: sdkQuery } = require('@anthropic-ai/claude-agent-sdk') as {
   query: (params: { prompt: string; options?: SDKOptions }) => SDKQuery;
 };
 
-import { ROLE_PROMPTS } from './constants.js';
+import { ROLE_PROMPTS, SAFE_TOOLS } from './constants.js';
 import { updateAgentSessionId } from './agentsPersistence.js';
 import type { PersistedSDKAgent, SDKAgentErrorCode, SDKAgentState } from './types.js';
 
@@ -78,7 +78,8 @@ export type AgentRunnerEvent =
   | { kind: 'turnDone'; agentId: number; inputTokens: number; outputTokens: number; model: string }
   | { kind: 'error'; agentId: number; code: SDKAgentErrorCode; message: string; retryable: boolean }
   | { kind: 'queued'; agentId: number; queueLength: number }
-  | { kind: 'sessionId'; agentId: number; sessionId: string };
+  | { kind: 'sessionId'; agentId: number; sessionId: string }
+  | { kind: 'permissionRequest'; agentId: number; toolName: string; toolInput: unknown; requestId: string };
 
 type EventCallback = (event: AgentRunnerEvent) => void;
 
@@ -88,6 +89,7 @@ export class AgentRunner {
   private agents = new Map<number, SDKAgentState>();
   private inflight = new Map<number, SDKQuery>();
   private queues = new Map<number, string[]>();
+  private pendingPermissions = new Map<string, { resolve: (allowed: boolean) => void; agentId: number; toolName: string }>();
 
   constructor(private onEvent: EventCallback) {}
 
@@ -152,7 +154,27 @@ export class AgentRunner {
     };
     if (agent.sessionId) options.resume = agent.sessionId;
     if (rolePrompt) options.systemPrompt = rolePrompt;
-    // NOTE: canUseTool is added in Phase 2
+    options.canUseTool = async (toolName: string, toolInput: unknown) => {
+      if (SAFE_TOOLS.has(toolName)) return { behavior: 'allow' as const };
+      if (agent.sessionAllow.has(toolName)) return { behavior: 'allow' as const };
+
+      const requestId = crypto.randomUUID();
+      // Emit event to webview for user decision
+      this.onEvent({
+        kind: 'permissionRequest' as const,
+        agentId,
+        toolName,
+        toolInput,
+        requestId,
+      });
+
+      // Wait for user response via resolvePermission
+      return new Promise<{ behavior: 'allow' | 'deny' }>((resolve) => {
+        this.pendingPermissions.set(requestId, { resolve: (allowed: boolean) => {
+          resolve({ behavior: allowed ? 'allow' : 'deny' });
+        }, agentId, toolName });
+      });
+    };
 
     const q = sdkQuery({ prompt, options });
     this.inflight.set(agentId, q);
@@ -225,6 +247,19 @@ export class AgentRunner {
     if (msg.includes('enoent') || msg.includes('no such file or directory')) return 'cwd_missing';
     if (msg.includes('exit code') || msg.includes('process') || msg.includes('spawn')) return 'process_crash';
     return 'unknown';
+  }
+
+  resolvePermission(requestId: string, allowed: boolean): void {
+    const entry = this.pendingPermissions.get(requestId);
+    if (!entry) return;
+    this.pendingPermissions.delete(requestId);
+    entry.resolve(allowed);
+  }
+
+  /** Add tool to session allowlist (called when user checks "always allow"). */
+  addSessionAllow(agentId: number, toolName: string): void {
+    const agent = this.agents.get(agentId);
+    if (agent) agent.sessionAllow.add(toolName);
   }
 
   /** Convert runtime state to persisted shape. */

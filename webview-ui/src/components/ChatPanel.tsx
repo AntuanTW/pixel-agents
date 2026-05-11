@@ -69,8 +69,8 @@ interface ChatPanelProps {
   onSend: (agentId: number, text: string) => void;
   onInterrupt: (agentId: number) => void;
   onClose: () => void;
-  onApprove: (agentId: number, requestId: string) => void;
-  onDeny: (agentId: number, requestId: string) => void;
+  onApprove: (agentId: number, requestId: string, toolName: string, always?: boolean) => void;
+  onDeny: (agentId: number, requestId: string, toolName: string) => void;
 }
 
 export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt, onClose, onApprove, onDeny }: ChatPanelProps) {
@@ -129,8 +129,9 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
         <div style={{ padding: '6px 8px', background: 'rgba(255, 165, 0, 0.1)', borderBottom: '2px solid #ff8c00', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: '#ff8c00' }}>
           <div style={{ marginBottom: 4 }}>Allow <strong>{permission.toolName}</strong>?</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => onApprove(agentId, permission.requestId)} style={{ background: '#22aa44', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
-            <button onClick={() => onDeny(agentId, permission.requestId)} style={{ background: '#ff4444', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName)} style={{ background: '#22aa44', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName, true)} style={{ background: '#2288cc', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Always</button>
+            <button onClick={() => onDeny(agentId, permission.requestId, permission.toolName)} style={{ background: '#ff4444', border: '2px solid var(--pixel-border)', color: '#fff', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
           </div>
         </div>
       )}

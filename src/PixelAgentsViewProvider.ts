@@ -119,10 +119,14 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
     this.initHooks();
     this._agentRunner = new AgentRunner((event) => {
       // Buffer events when webview panel is not visible
-      if (event.kind === 'sdkMessage' || event.kind === 'turnDone' || event.kind === 'error' || event.kind === 'queued') {
+      if (event.kind === 'sdkMessage' || event.kind === 'turnDone' || event.kind === 'error' || event.kind === 'queued' || event.kind === 'permissionRequest') {
         const buffer = this._chatEventBuffers.get(event.agentId) ?? [];
         if (buffer.length < CHAT_EVENT_BUFFER_MAX) buffer.push(event);
         this._chatEventBuffers.set(event.agentId, buffer);
+      }
+      // Send speech bubble for permission requests
+      if (event.kind === 'permissionRequest') {
+        this.webview?.postMessage({ type: 'agentToolPermission', id: event.agentId });
       }
       // Always forward to webview
       this.webview?.postMessage({ type: 'agentRunnerEvent', event });
@@ -880,6 +884,14 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
       } else if (message.type === 'interruptAgent') {
         const { agentId } = message as { agentId: number };
         this._agentRunner.interrupt(agentId);
+      } else if (message.type === 'permissionResponse') {
+        const { requestId, allowed, always, agentId, toolName } = message as {
+          requestId: string; allowed: boolean; always: boolean; agentId: number; toolName: string;
+        };
+        if (always && allowed && toolName) {
+          this._agentRunner.addSessionAllow(agentId, toolName);
+        }
+        this._agentRunner.resolvePermission(requestId, allowed);
       } else if (message.type === 'removeSdkAgent') {
         const { agentId } = message as { agentId: number };
         this._agentRunner.removeAgent(agentId);
