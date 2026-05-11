@@ -2,14 +2,16 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { CONFIG_FILE_NAME, LAYOUT_FILE_DIR } from './constants.js';
+import { CONFIG_FILE_NAME, LAYOUT_FILE_DIR, RECENT_REPOS_LIMIT } from './constants.js';
 
 interface PixelAgentsConfig {
   externalAssetDirectories: string[];
+  recentRepos: string[];
 }
 
 const DEFAULT_CONFIG: PixelAgentsConfig = {
   externalAssetDirectories: [],
+  recentRepos: [],
 };
 
 function getConfigFilePath(): string {
@@ -25,6 +27,9 @@ export function readConfig(): PixelAgentsConfig {
     return {
       externalAssetDirectories: Array.isArray(parsed.externalAssetDirectories)
         ? parsed.externalAssetDirectories.filter((d): d is string => typeof d === 'string')
+        : [],
+      recentRepos: Array.isArray(parsed.recentRepos)
+        ? parsed.recentRepos.filter((r): r is string => typeof r === 'string')
         : [],
     };
   } catch (err) {
@@ -47,4 +52,12 @@ export function writeConfig(config: PixelAgentsConfig): void {
   } catch (err) {
     console.error('[Pixel Agents] Failed to write config file:', err);
   }
+}
+
+/** Push repoPath to the top of recentRepos, cap at RECENT_REPOS_LIMIT. */
+export function addRecentRepo(repoPath: string): void {
+  const config = readConfig();
+  const filtered = config.recentRepos.filter((r) => r !== repoPath);
+  config.recentRepos = [repoPath, ...filtered].slice(0, RECENT_REPOS_LIMIT);
+  writeConfig(config);
 }
