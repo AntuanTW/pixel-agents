@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { AgentChatState } from '../hooks/useChatState.js';
 import { ChatBlockRenderer } from './ChatBlocks.js';
+import { MODEL_CONTEXT_LIMITS, DEFAULT_CONTEXT_LIMIT } from '../../../src/constants.js';
+import type { AgentRole } from '../../../src/types.js';
 
 const panelStyle: React.CSSProperties = {
   position: 'absolute',
@@ -71,9 +73,61 @@ interface ChatPanelProps {
   onClose: () => void;
   onApprove: (agentId: number, requestId: string, toolName: string, always?: boolean) => void;
   onDeny: (agentId: number, requestId: string, toolName: string) => void;
+  sessionId?: string | null;
+  role?: string;
+  branch?: string;
+  queueLength?: number;
+  onRoleChange?: (role: string) => void;
 }
 
-export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt, onClose, onApprove, onDeny }: ChatPanelProps) {
+function Inspector({ agent, chatState, branch, onInterrupt, onRoleChange, agentId, queueLength }: {
+  agent: { sessionId: string | null; role: string };
+  chatState: AgentChatState | undefined;
+  branch?: string;
+  onInterrupt: (agentId: number) => void;
+  onRoleChange?: (role: string) => void;
+  agentId: number;
+  queueLength: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const inputTokens = chatState?.inputTokens ?? 0;
+  const model = chatState?.currentModel ?? '';
+  const contextPct = inputTokens > 0 && model
+    ? Math.round((inputTokens / (MODEL_CONTEXT_LIMITS[model] ?? DEFAULT_CONTEXT_LIMIT)) * 100)
+    : null;
+  const isStreaming = chatState?.isStreaming ?? false;
+  return (
+    <div style={{ borderBottom: '2px solid var(--pixel-border)' }}>
+      <div onClick={() => setOpen((o) => !o)} style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 11, color: 'var(--pixel-text-dim)' }}>
+        {open ? '▾' : '▸'} Inspector
+      </div>
+      {open && (
+        <div style={{ padding: '4px 10px 8px', fontSize: 10, color: 'var(--pixel-text-dim)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div>Model: {model || '(pending first turn)'}</div>
+          {branch && <div>Branch: {branch}</div>}
+          <div>Session: {agent.sessionId ? agent.sessionId.slice(0, 8) + '…' : '(none)'}</div>
+          {contextPct !== null && <div>Context: {contextPct}%</div>}
+          <div>Queue: {queueLength > 0 ? `${queueLength} pending` : 'empty'}</div>
+          <div>
+            Role:{' '}
+            <select value={agent.role} onChange={(e) => onRoleChange?.(e.target.value as AgentRole)}
+              style={{ marginLeft: 6, background: 'var(--pixel-bg)', color: 'var(--pixel-text)', border: '1px solid var(--pixel-border)', fontFamily: 'inherit', fontSize: 10 }}>
+              {(['generalist', 'coder', 'designer', 'writer', 'reviewer'] as AgentRole[]).map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          <button onClick={() => onInterrupt(agentId)} disabled={!isStreaming}
+            style={{ marginTop: 4, border: '2px solid var(--pixel-border)', padding: '2px 6px', cursor: isStreaming ? 'pointer' : 'default', background: 'var(--pixel-bg)', color: isStreaming ? '#ff6666' : 'var(--pixel-text-dim)', fontFamily: 'inherit', fontSize: 10, alignSelf: 'flex-start' }}>
+            ⏹ Interrupt
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt, onClose, onApprove, onDeny, sessionId, role, branch, queueLength = 0, onRoleChange }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +177,17 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
           </button>
         </div>
       </div>
+
+      {/* Inspector */}
+      <Inspector
+        agent={{ sessionId: sessionId ?? null, role: role ?? 'generalist' }}
+        chatState={chatState}
+        branch={branch}
+        queueLength={queueLength}
+        onInterrupt={onInterrupt}
+        onRoleChange={onRoleChange}
+        agentId={agentId}
+      />
 
       {/* Permission prompt */}
       {permission && (

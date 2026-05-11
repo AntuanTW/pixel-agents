@@ -541,6 +541,7 @@ export function useExtensionMessages(
             break;
           case 'turnDone':
             chatState.handleTurnDone(ev.agentId, ev.inputTokens as number, ev.model as string);
+            os.setAgentTokens(ev.agentId, ev.inputTokens as number, ev.outputTokens as number, ev.model as string);
             break;
           case 'error':
             chatState.handleError(ev.agentId, ev.code as SDKAgentErrorCode, ev.message as string);

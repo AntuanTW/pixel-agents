@@ -51,6 +51,7 @@ import { CharacterState, TILE_SIZE, TileType } from '../types.js';
 import { getWallInstances, hasWallSprites, wallColorToHex } from '../wallTiles.js';
 import { getCharacterSprite } from './characters.js';
 import { renderMatrixEffect } from './matrixEffect.js';
+import { MODEL_CONTEXT_LIMITS, DEFAULT_CONTEXT_LIMIT } from '../../../../src/constants.js';
 
 // ── Render functions ────────────────────────────────────────────
 
@@ -200,6 +201,31 @@ export function renderScene(
       zY: charZY,
       draw: (c) => {
         c.drawImage(cached, drawX, drawY);
+
+        // Role icon above head (non-generalist roles)
+        const ROLE_ICONS: Record<string, string> = {
+          coder: '⌨', designer: '🎨', writer: '✍', reviewer: '🔍',
+        };
+        const rIcon = ch.role ? ROLE_ICONS[ch.role] : undefined;
+        if (rIcon && zoom >= 2) {
+          c.font = `${zoom * 5}px sans-serif`;
+          c.textAlign = 'center';
+          c.fillText(rIcon, drawX + cached.width / 2, drawY - zoom * 3);
+        }
+
+        // Token bar above head (below role icon)
+        if (ch.inputTokens > 0 && zoom >= 2) {
+          const limit = MODEL_CONTEXT_LIMITS[ch.currentModel ?? ''] ?? DEFAULT_CONTEXT_LIMIT;
+          const pct = Math.min(1, ch.inputTokens / limit);
+          const barW = cached.width;
+          const barH = Math.max(1, zoom);
+          const barY = drawY - barH - zoom * (rIcon ? 7 : 3);
+          const color = pct < 0.5 ? '#44cc44' : pct < 0.8 ? '#ccaa22' : '#cc3333';
+          c.fillStyle = '#222';
+          c.fillRect(drawX, barY, barW, barH);
+          c.fillStyle = color;
+          c.fillRect(drawX, barY, Math.round(barW * pct), barH);
+        }
       },
     });
   }

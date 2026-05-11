@@ -196,4 +196,8 @@ export interface Character {
   inputTokens: number;
   /** Cumulative output tokens consumed */
   outputTokens: number;
+  /** Current model name (from turnDone) */
+  currentModel?: string;
+  /** Agent role (generalist, coder, designer, writer, reviewer) */
+  role?: string;
 }

@@ -68,7 +68,7 @@ import type { AgentRunnerEvent } from './agentRunner.js';
 import { allocateNextAgentId, readAgentsFile, removePersistedAgent, upsertAgent } from './agentsPersistence.js';
 import { pickRepo } from './repoPicker.js';
 import { getTranscriptPath, loadTranscript } from './transcriptLoader.js';
-import type { AgentState, SDKAgentState } from './types.js';
+import type { AgentRole, AgentState, SDKAgentState } from './types.js';
 import { CHAT_EVENT_BUFFER_MAX } from './constants.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
@@ -898,6 +898,13 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
         removePersistedAgent(agentId);
         this._chatEventBuffers.delete(agentId);
         this.webview?.postMessage({ type: 'sdkAgentRemoved', agentId });
+      } else if (message.type === 'agentRoleChanged') {
+        const { agentId, role } = message as { agentId: number; role: string };
+        const agent = this._agentRunner.getAgent(agentId);
+        if (agent) {
+          agent.role = role as AgentRole;
+          upsertAgent(this._agentRunner.toPersistedAgent(agent));
+        }
       } else if (message.type === 'openChatPanel') {
         const { agentId } = message as { agentId: number };
         const agent = this._agentRunner.getAgent(agentId);

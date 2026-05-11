@@ -349,10 +349,11 @@ export class OfficeState {
       persisted.seatId ?? undefined,
       skipSpawnEffect,
     );
-    // Store display name on the character for ChatPanel header
+    // Store display name + role on the character
     const ch = this.characters.get(persisted.id);
-    if (ch && persisted.displayName) {
-      ch.agentName = persisted.displayName;
+    if (ch) {
+      if (persisted.displayName) ch.agentName = persisted.displayName;
+      ch.role = persisted.role;
     }
   }
 
@@ -740,11 +741,12 @@ export class OfficeState {
     }
   }
 
-  setAgentTokens(id: number, inputTokens: number, outputTokens: number): void {
+  setAgentTokens(id: number, inputTokens: number, outputTokens: number, currentModel?: string): void {
     const ch = this.characters.get(id);
     if (!ch) return;
     ch.inputTokens = inputTokens;
     ch.outputTokens = outputTokens;
+    if (currentModel !== undefined) ch.currentModel = currentModel;
   }
 
   update(dt: number): void {
