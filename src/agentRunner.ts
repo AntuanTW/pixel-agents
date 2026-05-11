@@ -110,7 +110,7 @@ export class AgentRunner {
   interrupt(agentId: number): void {
     const q = this.inflight.get(agentId);
     if (q) {
-      void q.interrupt();
+      q.interrupt().catch(() => {}); // SDK background cleanup may reject
       this.inflight.delete(agentId);
     }
     this.queues.delete(agentId);
@@ -165,7 +165,9 @@ export class AgentRunner {
     } catch (err) {
       const code = this.classifyError(err);
       const message = String(err);
-      this.onEvent({ kind: 'error', agentId, code, message, retryable: code !== 'binary_missing' });
+      agent.errorCode = code;
+      agent.lastErrorMessage = message;
+      this.onEvent({ kind: 'error', agentId, code, message, retryable: code !== 'binary_missing' && code !== 'auth_failed' });
 
       if (code === 'session_not_found') {
         agent.sessionId = null;
@@ -173,7 +175,6 @@ export class AgentRunner {
       }
     } finally {
       this.inflight.delete(agentId);
-      agent.errorCode = null; // clear error on any successful completion
 
       const queue = this.queues.get(agentId) ?? [];
       if (queue.length > 0) {
@@ -220,6 +221,7 @@ export class AgentRunner {
       return 'auth_failed';
     }
     if (msg.includes('session') && msg.includes('not found')) return 'session_not_found';
+    if (msg.includes('binary') || msg.includes('not found') || msg.includes('command not found')) return 'binary_missing';
     if (msg.includes('enoent') || msg.includes('no such file or directory')) return 'cwd_missing';
     if (msg.includes('exit code') || msg.includes('process') || msg.includes('spawn')) return 'process_crash';
     return 'unknown';
