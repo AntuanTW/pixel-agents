@@ -532,6 +532,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           false,
         );
         const config = readConfig();
+        const legacyCount = this.agents.size;
         this.webview?.postMessage({
           type: 'settingsLoaded',
           soundEnabled,
@@ -542,6 +543,8 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           hooksEnabled,
           hooksInfoShown,
           externalAssetDirectories: config.externalAssetDirectories,
+          hasLegacyAgents: legacyCount > 0,
+          legacyAgentCount: legacyCount,
         });
 
         // Send workspace folders to webview (only when multi-root)
@@ -899,6 +902,32 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           for (const ev of buffer) {
             this.webview?.postMessage({ type: 'agentRunnerEvent', event: ev });
           }
+        }
+      } else if (message.type === 'migrateLegacyAgents') {
+        for (const [, agent] of this.agents) {
+          const { palette, hueShift } = this._pickDiversePalette();
+          const state: SDKAgentState = {
+            id: allocateNextAgentId(),
+            repoPath: agent.projectDir,
+            displayName: agent.projectDir.split('/').pop() ?? agent.projectDir,
+            sessionId: null,
+            role: 'generalist',
+            palette,
+            hueShift,
+            seatId: null,
+            createdAt: Date.now(),
+            currentModel: null,
+            inputTokens: 0,
+            sessionAllow: new Set(),
+            errorCode: null,
+            lastErrorMessage: null,
+          };
+          this._agentRunner.addAgent(state);
+          upsertAgent(this._agentRunner.toPersistedAgent(state));
+          this.webview?.postMessage({
+            type: 'sdkAgentCreated',
+            agent: this._agentRunner.toPersistedAgent(state),
+          });
         }
       }
     });

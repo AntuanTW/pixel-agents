@@ -75,6 +75,9 @@ interface ExtensionMessageState {
   setOpenPanelAgentId: (id: number | null) => void;
   showRepoPicker: boolean;
   setShowRepoPicker: (v: boolean) => void;
+  hasLegacyAgents: boolean;
+  legacyAgentCount: number;
+  setHasLegacyAgents: (v: boolean) => void;
 }
 
 function saveAgentSeats(os: OfficeState): void {
@@ -116,6 +119,8 @@ export function useExtensionMessages(
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
   const [openPanelAgentId, setOpenPanelAgentId] = useState<number | null>(null);
   const [showRepoPicker, setShowRepoPicker] = useState(false);
+  const [hasLegacyAgents, setHasLegacyAgents] = useState(false);
+  const [legacyAgentCount, setLegacyAgentCount] = useState(0);
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false);
@@ -494,6 +499,12 @@ export function useExtensionMessages(
         if (typeof msg.extensionVersion === 'string') {
           setExtensionVersion(msg.extensionVersion as string);
         }
+        if (typeof msg.hasLegacyAgents === 'boolean') {
+          setHasLegacyAgents(msg.hasLegacyAgents as boolean);
+        }
+        if (typeof msg.legacyAgentCount === 'number') {
+          setLegacyAgentCount(msg.legacyAgentCount as number);
+        }
       } else if (msg.type === 'externalAssetDirectoriesUpdated') {
         if (Array.isArray(msg.dirs)) {
           setExternalAssetDirectories(msg.dirs as string[]);
@@ -592,5 +603,8 @@ export function useExtensionMessages(
     setOpenPanelAgentId,
     showRepoPicker,
     setShowRepoPicker,
+    hasLegacyAgents,
+    legacyAgentCount,
+    setHasLegacyAgents,
   };
 }

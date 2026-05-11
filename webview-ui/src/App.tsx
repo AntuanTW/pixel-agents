@@ -6,6 +6,7 @@ import { ChangelogModal } from './components/ChangelogModal.js';
 import { ChatPanel } from './components/ChatPanel.js';
 import { DebugView } from './components/DebugView.js';
 import { EditActionBar } from './components/EditActionBar.js';
+import { MigrationBanner } from './components/MigrationBanner.js';
 import { MigrationNotice } from './components/MigrationNotice.js';
 import { RepoPicker } from './components/RepoPicker.js';
 import { SettingsModal } from './components/SettingsModal.js';
@@ -79,6 +80,9 @@ function App() {
     setOpenPanelAgentId,
     showRepoPicker,
     setShowRepoPicker,
+    hasLegacyAgents,
+    legacyAgentCount,
+    setHasLegacyAgents,
   } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty);
 
   // Show migration notice once layout reset is detected
@@ -398,6 +402,16 @@ function App() {
 
       {showMigrationNotice && (
         <MigrationNotice onDismiss={() => setMigrationNoticeDismissed(true)} />
+      )}
+
+      {hasLegacyAgents && (
+        <MigrationBanner
+          agentCount={legacyAgentCount}
+          onMigrate={() => {
+            vscode.postMessage({ type: 'migrateLegacyAgents' });
+          }}
+          onDismiss={() => setHasLegacyAgents(false)}
+        />
       )}
 
       {openPanelAgentId !== null && chatState.chatMap.has(openPanelAgentId) && (
