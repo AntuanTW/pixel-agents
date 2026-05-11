@@ -29,7 +29,7 @@ Includes the small-cost additions from the project vision that fit naturally on 
 - Drag desks-as-directories (future spec).
 - Custom characters / furniture (future spec).
 - 3D / VR rendering (out of scope, ever).
-- **Migrating existing terminal-based agents.** First run on the new version wipes the agent registry. Personal fork, low cost; avoids a class of migration bugs. The chat panel will list "no agents — create one" on first launch.
+- **Migrating existing terminal-based agents.** First run on the new version wipes the agent registry. Personal fork, low cost; avoids a class of migration bugs. On first launch after upgrade, show a one-time banner: "Pixel Agents has been upgraded. Your previous terminal-based agents were not migrated. Create a new agent to get started." — then the empty office.
 
 ## Architecture
 
@@ -48,7 +48,9 @@ Includes the small-cost additions from the project vision that fit naturally on 
 │          }})) { dispatch ev → webview }                     │
 │  - RepoPicker                       (NEW, vscode dialog)    │
 │  - agents.json persistence          (NEW, ~/.pixel-agents)  │
-│  - Server                           (existing, unchanged)   │
+│  - Server                           (existing + Phase 3     │
+│                                      minor: PIXEL_AGENTS_ID │
+│                                      routing in hook handler)│
 │  - Hook script                      (small extension: read  │
 │                                      PIXEL_AGENTS_ID env)   │
 └─────────────────────────────────────────────────────────────┘
@@ -68,10 +70,12 @@ Includes the small-cost additions from the project vision that fit naturally on 
 
 **Why SDK over CLI subprocess:** the TS Agent SDK wraps the local `claude` binary, so it inherits the user's MAX subscription auth. It also handles process spawning, stdin piping, and gives us a structured async event stream — less code than parsing stream-json manually. Confirmed working in the `ultimate-assistant` repo via Python SDK with empty env.
 
-**Phase 0 validates three SDK capabilities before any Phase 1 code is written:**
+**Phase 0 validates five SDK capabilities before any Phase 1 code is written:**
 1. Auth: `query()` with no env vars uses the user's MAX subscription (confirmed by UA Python SDK pattern).
 2. System prompt: `ClaudeAgentOptions` accepts a `systemPrompt` field (needed for role presets; verify TS SDK supports this — UA Python SDK uses `system_prompt=...`).
 3. Env propagation: env vars set in `query({ env })` reach the hook script process.
+4. Abort: `AbortController` passed to `query()` can cancel an in-flight turn mid-stream. Interrupt feature depends on this. If unsupported, interrupt becomes "wait for turn end then discard" — note that in the spec as the fallback.
+5. Async `canUseTool`: the callback must support returning a `Promise<boolean>` so it can await user input from the webview before resolving. If the callback must return synchronously, the permission model must be redesigned (e.g., auto-deny with a "run again with permissions" UX, or approve-all mode).
 
 **What we DON'T build:** WebSocket protocol, SQLite, multi-window sync, process daemon, provider abstraction.
 
@@ -108,11 +112,14 @@ Per-agent serialization: a simple per-agent async queue ensures only one turn ru
 |---|---|---|
 | `auth_failed` | SDK reports auth/subscription error | Inline error block + "Open Claude Code login" button |
 | `binary_missing` | `claude` CLI not on PATH | Inline error block + install instructions link |
-| `cwd_missing` | Repo path doesn't exist on disk | Inline error block + "Browse new path" / "Remove agent" buttons |
+| `cwd_missing` | Repo path doesn't exist on disk | Inline error block + "Browse new path" (clears sessionId, treats next prompt as turn 1 in the new path) / "Remove agent" buttons |
 | `process_crash` | SDK process exits unexpectedly | Inline error block + "Retry" button |
+| `session_not_found` | `resume` call fails — session expired or unknown | Inline error block; `sessionId` cleared from agents.json; next prompt starts fresh |
 | `unknown` | Anything else | Inline error block with raw message + "Retry" |
 
 Errors are non-terminal: the agent stays in the registry and can be retried. The character shows a small red `!` overlay until the next successful turn.
+
+**Retry behavior.** The Retry button in the inline error block re-queues the same original prompt text and clears the error overlay. The error code is discarded. If the retry fails again, a new error block appears. There is no automatic retry — always user-triggered.
 
 ### Preflight check
 
@@ -249,7 +256,7 @@ Updating presets later = code change + extension reload. Acceptable for a person
 **Stats / token bar:**
 - A 1×16px bar above each character's head, showing context usage as % of model limit.
 - Color: green (<50%), yellow (50–80%), red (>80%).
-- Token total: summed from `ResultMessage.usage.inputTokens + outputTokens` across turns **in the current session**. Kept in-memory only; resets to 0 on new `sessionId` (new session or `/clear`). Not persisted to disk — approximate display only. If the extension restarts, bar shows 0% until the next turn completes.
+- Token display: the bar shows **current context window occupancy** — `ResultMessage.usage.inputTokens` from the most recent completed turn, divided by the model's context limit. This is "how full is the context right now", not a running total. Kept in-memory; resets to 0 on new `sessionId` (new session or `/clear`) or extension restart. Not persisted — approximate display only.
 - Hides at zoom < 2x to avoid clutter.
 
 **Model context limit source.** Hardcoded `MODEL_CONTEXT_LIMITS` map in the extension:
@@ -325,7 +332,7 @@ Read directly from the existing Claude Code transcript at
 | Situation | Behavior |
 |---|---|
 | `sessionId` is null (agent never sent a prompt) | Render empty chat with placeholder "No messages yet." |
-| Transcript file missing on disk | Render empty chat. Log warning to extension output channel. Treat next user prompt as turn 1. |
+| Transcript file missing on disk, `sessionId` non-null | Render empty chat + log warning. Still attempt `query({ resume: sessionId })` on next prompt — Claude Code stores sessions server-side so resume may still work even if the local JSONL was deleted. If the SDK errors on resume (session expired/unknown), emit `agentError(session_not_found)`, atomically clear `sessionId` in agents.json, and retry next prompt as a fresh turn (no `resume`). |
 | Transcript file exists but parse fails partway | Render successfully-parsed blocks + inline notice "Transcript truncated at line N" |
 | Transcript file corrupt from the start | Render empty chat + inline notice "Could not load transcript history" |
 
@@ -343,6 +350,8 @@ Hooks fire for ALL local `claude` invocations including the user's own terminal 
 - **Fallback for safety:** if a hook event arrives WITHOUT `PIXEL_AGENTS_ID` but with a `session_id` matching a known agent's session, the server still routes it. This guards against env-var propagation failing in some edge case (e.g., the SDK spawning a sub-process that strips env). The session_id matching path is kept; it's a few lines of code and prevents silent regressions.
 
 **Hook installer:** `claudeHookInstaller.installHook()` runs as part of the preflight check on every extension activation. It's already idempotent (writes the bundled hook script atomically + registers in `~/.claude/settings.json` only if not already registered). This guarantees the script is always present and up to date.
+
+**Hook script resilience when server is unreachable:** The existing `claude-hook.ts` already uses fire-and-forget HTTP with a short timeout (no retry, no blocking). If the server is down (VS Code closed, extension not activated), hook requests silently time out and the user's normal `claude` CLI usage is unaffected. This behavior is preserved — no change needed.
 
 ## What gets removed
 
@@ -374,7 +383,7 @@ Confirm:
 If any of these fails: stop, regroup before building anything else.
 
 ### Phase 1 — Core MVP
-- Preflight check (claude binary present, hook installer runs, SDK smoke test).
+- Preflight check (claude binary present, hook installer runs — no smoke test on activation).
 - AgentRunner class with full error-event surface (auth/binary/cwd/crash).
 - RepoPicker UI + recent-repos persistence.
 - Chat panel with text + tool block rendering, skeleton-loading for transcript parse, fallbacks for missing/corrupt transcript.
