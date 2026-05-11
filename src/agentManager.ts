@@ -1,3 +1,4 @@
+// PHASE 3c: Terminal agent machinery — retained for migration compatibility. Will be removed in a future cleanup.
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';

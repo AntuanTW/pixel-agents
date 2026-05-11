@@ -1,3 +1,4 @@
+// PHASE 3c: Terminal agent machinery — retained for migration compatibility. Will be removed in a future cleanup.
 /**
  * Session Detection: Dual-Mode Architecture
  *
@@ -93,6 +94,7 @@ export function startFileWatching(
     const prevOffset = agent.fileOffset;
     readNewLines(agentId, agents, waitingTimers, permissionTimers, webview);
 
+    // PHASE 3c: Hooks mode preferred, heuristic polling kept as fallback until terminal agents are fully deprecated.
     // HEURISTIC FALLBACK: Per-agent /clear detection (skipped when hooks handle sessions).
     // When hooks are active, SessionEnd+SessionStart handle /clear reliably.
     if (

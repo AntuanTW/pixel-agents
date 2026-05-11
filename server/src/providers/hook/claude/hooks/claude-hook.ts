@@ -26,7 +26,10 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const body = JSON.stringify(data);
+  const body = JSON.stringify({
+    ...data,
+    pixel_agents_id: process.env.PIXEL_AGENTS_ID ?? null,
+  });
   return new Promise((resolve) => {
     const req = http.request(
       {

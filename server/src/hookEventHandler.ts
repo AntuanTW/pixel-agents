@@ -17,6 +17,9 @@ export interface HookEvent {
   hook_event_name: string;
   /** Claude Code session ID, maps to JSONL filename */
   session_id: string;
+  /** Pixel Agents agent ID (forwarded from PIXEL_AGENTS_ID env var by the hook script).
+   *  When set, takes precedence over session_id for agent routing. */
+  pixel_agents_id?: number | null;
   /** Additional provider-specific fields (notification_type, tool_name, etc.) */
   [key: string]: unknown;
 }
@@ -269,7 +272,16 @@ export class HookEventHandler {
       return;
     }
 
-    let agentId = this.sessionToAgentId.get(event.session_id);
+    // --- Agent lookup: pixel_agents_id takes precedence over session_id ---
+    // When the hook script forwards PIXEL_AGENTS_ID from the environment, we can
+    // route directly by agent ID without maintaining a session_id → agent_id mapping.
+    let agentId: number | undefined;
+    const pixelAgentId = event.pixel_agents_id;
+    if (pixelAgentId != null && typeof pixelAgentId === 'number' && this.agents.has(pixelAgentId)) {
+      agentId = pixelAgentId;
+    } else {
+      agentId = this.sessionToAgentId.get(event.session_id);
+    }
     if (agentId === undefined) {
       for (const [id, agent] of this.agents) {
         if (agent.sessionId === event.session_id) {
