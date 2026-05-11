@@ -30,6 +30,7 @@ import type {
   Seat,
   TileType as TileTypeVal,
 } from '../types.js';
+import type { PersistedSDKAgent } from '../../../../src/types.js';
 import { CharacterState, Direction, MATRIX_EFFECT_DURATION, TILE_SIZE } from '../types.js';
 import { createCharacter, updateCharacter } from './characters.js';
 import { matrixEffectSeeds } from './matrixEffect.js';
@@ -338,6 +339,41 @@ export class OfficeState {
     ch.matrixEffectTimer = 0;
     ch.matrixEffectSeeds = matrixEffectSeeds();
     ch.bubbleType = null;
+  }
+
+  addSDKAgent(persisted: PersistedSDKAgent, skipSpawnEffect = false): void {
+    this.addAgent(
+      persisted.id,
+      persisted.palette,
+      persisted.hueShift,
+      persisted.seatId ?? undefined,
+      skipSpawnEffect,
+    );
+    // Store display name on the character for ChatPanel header
+    const ch = this.characters.get(persisted.id);
+    if (ch && persisted.displayName) {
+      ch.agentName = persisted.displayName;
+    }
+  }
+
+  removeSDKAgent(agentId: number): void {
+    this.removeAgent(agentId);
+  }
+
+  getSDKAgent(agentId: number): PersistedSDKAgent | undefined {
+    const ch = this.characters.get(agentId);
+    if (!ch) return undefined;
+    return {
+      id: agentId,
+      repoPath: ch.folderName ?? '',
+      displayName: ch.agentName ?? `Agent ${agentId}`,
+      sessionId: null,
+      role: 'generalist',
+      palette: ch.palette,
+      hueShift: ch.hueShift,
+      seatId: ch.seatId,
+      createdAt: 0,
+    };
   }
 
   /** Find seat uid at a given tile position, or null */

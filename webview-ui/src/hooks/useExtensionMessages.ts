@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { playDoneSound, playPermissionSound, setSoundEnabled } from '../notificationSound.js';
+import { useChatState } from './useChatState.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { setFloorSprites } from '../office/floorTiles.js';
 import { buildDynamicCatalog } from '../office/layout/furnitureCatalog.js';
@@ -10,6 +11,7 @@ import { extractToolName } from '../office/toolUtils.js';
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
 import { vscode } from '../vscodeApi.js';
+import type { ChatBlock, PersistedSDKAgent, SDKAgentErrorCode } from '../../../src/types.js';
 
 export interface SubagentCharacter {
   id: number;
@@ -66,6 +68,13 @@ interface ExtensionMessageState {
   hooksEnabled: boolean;
   setHooksEnabled: (v: boolean) => void;
   hooksInfoShown: boolean;
+  // -- SDK agent chat state --
+  chatState: ReturnType<typeof useChatState>;
+  recentRepos: string[];
+  openPanelAgentId: number | null;
+  setOpenPanelAgentId: (id: number | null) => void;
+  showRepoPicker: boolean;
+  setShowRepoPicker: (v: boolean) => void;
 }
 
 function saveAgentSeats(os: OfficeState): void {
@@ -103,9 +112,16 @@ export function useExtensionMessages(
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
   const [hooksEnabled, setHooksEnabled] = useState(true);
   const [hooksInfoShown, setHooksInfoShown] = useState(true);
+  const chatState = useChatState();
+  const [recentRepos, setRecentRepos] = useState<string[]>([]);
+  const [openPanelAgentId, setOpenPanelAgentId] = useState<number | null>(null);
+  const [showRepoPicker, setShowRepoPicker] = useState(false);
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false);
+  // Ref for openPanelAgentId to avoid stale closure in message handler
+  const openPanelAgentIdRef = useRef<number | null>(null);
+  openPanelAgentIdRef.current = openPanelAgentId;
 
   useEffect(() => {
     // Buffer agents from existingAgents until layout is loaded
@@ -506,6 +522,41 @@ export function useExtensionMessages(
       } else if (msg.type === 'agentTokenUsage') {
         const id = msg.id as number;
         os.setAgentTokens(id, msg.inputTokens as number, msg.outputTokens as number);
+      } else if (msg.type === 'agentRunnerEvent') {
+        const ev = msg.event as { kind: string; agentId: number; [key: string]: unknown };
+        switch (ev.kind) {
+          case 'sdkMessage':
+            chatState.handleSDKMessage(ev.agentId, ev.msg as Record<string, unknown>);
+            break;
+          case 'turnDone':
+            chatState.handleTurnDone(ev.agentId, ev.inputTokens as number, ev.model as string);
+            break;
+          case 'error':
+            chatState.handleError(ev.agentId, ev.code as SDKAgentErrorCode, ev.message as string);
+            break;
+          case 'queued':
+            chatState.handleQueued(ev.agentId, ev.queueLength as number);
+            break;
+        }
+      } else if (msg.type === 'chatHistory') {
+        const chMsg = msg as { agentId: number; blocks: ChatBlock[]; truncatedAt?: number; error?: string };
+        chatState.initAgent(chMsg.agentId, chMsg.blocks ?? []);
+      } else if (msg.type === 'sdkAgentCreated') {
+        const sdkMsg = msg as { agent: PersistedSDKAgent; recentRepos?: string[] };
+        os.addSDKAgent(sdkMsg.agent, false);
+        if (sdkMsg.recentRepos) setRecentRepos(sdkMsg.recentRepos);
+        setShowRepoPicker(false);
+        setOpenPanelAgentId(sdkMsg.agent.id);
+      } else if (msg.type === 'sdkExistingAgents') {
+        const sdkMsg = msg as { agents: PersistedSDKAgent[] };
+        for (const a of sdkMsg.agents) {
+          os.addSDKAgent(a, true);
+        }
+      } else if (msg.type === 'sdkAgentRemoved') {
+        const rmMsg = msg as { agentId: number };
+        os.removeSDKAgent(rmMsg.agentId);
+        chatState.removeAgent(rmMsg.agentId);
+        if (openPanelAgentIdRef.current === rmMsg.agentId) setOpenPanelAgentId(null);
       }
     };
     window.addEventListener('message', handler);
@@ -534,5 +585,12 @@ export function useExtensionMessages(
     hooksEnabled,
     setHooksEnabled,
     hooksInfoShown,
+    // SDK agent chat state
+    chatState,
+    recentRepos,
+    openPanelAgentId,
+    setOpenPanelAgentId,
+    showRepoPicker,
+    setShowRepoPicker,
   };
 }

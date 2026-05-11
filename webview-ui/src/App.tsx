@@ -3,9 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toMajorMinor } from './changelogData.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
 import { ChangelogModal } from './components/ChangelogModal.js';
+import { ChatPanel } from './components/ChatPanel.js';
 import { DebugView } from './components/DebugView.js';
 import { EditActionBar } from './components/EditActionBar.js';
 import { MigrationNotice } from './components/MigrationNotice.js';
+import { RepoPicker } from './components/RepoPicker.js';
 import { SettingsModal } from './components/SettingsModal.js';
 import { Tooltip } from './components/Tooltip.js';
 import { Modal } from './components/ui/Modal.js';
@@ -71,6 +73,12 @@ function App() {
     hooksEnabled,
     setHooksEnabled,
     hooksInfoShown,
+    chatState,
+    recentRepos,
+    openPanelAgentId,
+    setOpenPanelAgentId,
+    showRepoPicker,
+    setShowRepoPicker,
   } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty);
 
   // Show migration notice once layout reset is detected
@@ -139,6 +147,31 @@ function App() {
     const focusId = meta ? meta.parentAgentId : agentId;
     vscode.postMessage({ type: 'focusAgent', id: focusId });
   }, []);
+
+  const handleSend = useCallback((agentId: number, text: string) => {
+    chatState.appendUserPrompt(agentId, text);
+    vscode.postMessage({ type: 'sendPrompt', agentId, text });
+  }, [chatState]);
+
+  const handleInterrupt = useCallback((agentId: number) => {
+    vscode.postMessage({ type: 'interruptAgent', agentId });
+  }, []);
+
+  const handleApprove = useCallback((agentId: number, requestId: string) => {
+    chatState.clearPermission(agentId);
+    vscode.postMessage({ type: 'permissionResponse', requestId, allowed: true, always: false });
+  }, [chatState]);
+
+  const handleDeny = useCallback((agentId: number, requestId: string) => {
+    chatState.clearPermission(agentId);
+    vscode.postMessage({ type: 'permissionResponse', requestId, allowed: false, always: false });
+  }, [chatState]);
+
+  useEffect(() => {
+    if (openPanelAgentId !== null) {
+      vscode.postMessage({ type: 'openChatPanel', agentId: openPanelAgentId });
+    }
+  }, [openPanelAgentId]);
 
   const officeState = getOfficeState();
 
@@ -321,7 +354,7 @@ function App() {
 
       <BottomToolbar
         isEditMode={editor.isEditMode}
-        onOpenClaude={editor.handleOpenClaude}
+        onOpenClaude={() => setShowRepoPicker(true)}
         onToggleEditMode={editor.handleToggleEditMode}
         isSettingsOpen={isSettingsOpen}
         onToggleSettings={() => setIsSettingsOpen((v) => !v)}
@@ -365,6 +398,29 @@ function App() {
 
       {showMigrationNotice && (
         <MigrationNotice onDismiss={() => setMigrationNoticeDismissed(true)} />
+      )}
+
+      {openPanelAgentId !== null && chatState.chatMap.has(openPanelAgentId) && (
+        <ChatPanel
+          key={openPanelAgentId}
+          agentId={openPanelAgentId}
+          displayName={`Agent ${openPanelAgentId}`}
+          chatState={chatState.chatMap.get(openPanelAgentId)!}
+          onSend={handleSend}
+          onInterrupt={handleInterrupt}
+          onApprove={handleApprove}
+          onDeny={handleDeny}
+          onClose={() => setOpenPanelAgentId(null)}
+        />
+      )}
+
+      {showRepoPicker && (
+        <RepoPicker
+          recentRepos={recentRepos}
+          onPick={(path) => vscode.postMessage({ type: 'pickRecentRepo', repoPath: path })}
+          onBrowse={() => vscode.postMessage({ type: 'browseRepo' })}
+          onCancel={() => setShowRepoPicker(false)}
+        />
       )}
     </div>
   );
