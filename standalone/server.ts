@@ -12,7 +12,7 @@ import { HookEventHandler } from '../server/src/hookEventHandler.js';
 import { installHooks, uninstallHooks } from '../server/src/providers/hook/claude/claudeHookInstaller.js';
 import { claudeProvider, copyHookScript } from '../server/src/providers/index.js';
 import { PixelAgentsServer } from '../server/src/server.js';
-import { addWorkDirectory, readConfig, removeWorkDirectory } from '../src/configPersistence.js';
+import { addWorkDirectory, readConfig, removeWorkDirectory, writeConfig } from '../src/configPersistence.js';
 import { readLayoutFromFile, writeLayoutToFile } from '../src/layoutPersistence.js';
 import { getTranscriptPath, loadTranscript } from '../src/transcriptLoader.js';
 
@@ -334,8 +334,27 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
       break;
     }
 
-    case 'addExternalAssetDirectory':
+    case 'addExternalAssetDirectory': {
+      const dirPath = (payload as { path?: string }).path;
+      if (dirPath) {
+        const cfg = readConfig();
+        if (!cfg.externalAssetDirectories.includes(dirPath)) {
+          cfg.externalAssetDirectories.push(dirPath);
+          writeConfig(cfg);
+        }
+        reply({ type: 'externalAssetDirectoriesUpdated', dirs: cfg.externalAssetDirectories });
+      }
+      break;
+    }
+
     case 'removeExternalAssetDirectory': {
+      const dirPath = (payload as { path: string }).path;
+      if (dirPath) {
+        const cfg = readConfig();
+        cfg.externalAssetDirectories = cfg.externalAssetDirectories.filter(d => d !== dirPath);
+        writeConfig(cfg);
+        reply({ type: 'externalAssetDirectoriesUpdated', dirs: cfg.externalAssetDirectories });
+      }
       break;
     }
 
@@ -362,7 +381,7 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
           }
         } catch { /* skip unreadable dirs */ }
       }
-      reply({ type: 'workDirectoriesScanned', repos });
+      reply({ type: 'workDirectoryRepos', repos });
       break;
     }
 
