@@ -353,6 +353,7 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
       const config = readConfig();
       const repos: string[] = [];
       for (const dir of config.workDirectories) {
+        if (!dir || typeof dir !== 'string') continue;
         try {
           for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
             if (!entry.isDirectory()) continue;
