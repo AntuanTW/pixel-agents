@@ -2,8 +2,8 @@ import type { ColorValue } from './components/ui/types.js';
 
 // ── Grid & Layout ────────────────────────────────────────────
 export const TILE_SIZE = 16;
-export const DEFAULT_COLS = 20;
-export const DEFAULT_ROWS = 11;
+export const DEFAULT_COLS = 30;
+export const DEFAULT_ROWS = 16;
 export const MAX_COLS = 64;
 export const MAX_ROWS = 64;
 

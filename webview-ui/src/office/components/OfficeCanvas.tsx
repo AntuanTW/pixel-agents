@@ -27,6 +27,7 @@ import { EditTool, TILE_SIZE } from '../types.js';
 interface OfficeCanvasProps {
   officeState: OfficeState;
   onClick: (agentId: number) => void;
+  onDeselect: () => void;
   isEditMode: boolean;
   editorState: EditorState;
   onEditorTileAction: (col: number, row: number) => void;
@@ -44,6 +45,7 @@ interface OfficeCanvasProps {
 export function OfficeCanvas({
   officeState,
   onClick,
+  onDeselect,
   isEditMode,
   editorState,
   onEditorTileAction,
@@ -680,11 +682,12 @@ export function OfficeCanvas({
         if (officeState.selectedAgentId === hitId) {
           officeState.selectedAgentId = null;
           officeState.cameraFollowId = null;
+          onDeselect();
         } else {
           officeState.selectedAgentId = hitId;
           officeState.cameraFollowId = hitId;
         }
-        onClick(hitId); // still focus terminal
+        onClick(hitId);
         return;
       }
 
@@ -726,9 +729,10 @@ export function OfficeCanvas({
         // Clicked empty space — deselect
         officeState.selectedAgentId = null;
         officeState.cameraFollowId = null;
+        onDeselect();
       }
     },
-    [officeState, onClick, screenToWorld, screenToTile, isEditMode],
+    [officeState, onClick, onDeselect, screenToWorld, screenToTile, isEditMode],
   );
 
   const handleMouseLeave = useCallback(() => {

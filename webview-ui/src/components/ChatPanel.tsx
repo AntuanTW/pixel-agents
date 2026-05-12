@@ -10,9 +10,9 @@ const panelStyle: React.CSSProperties = {
   right: 0,
   top: 0,
   bottom: 0,
-  width: 420,
-  background: 'var(--pixel-bg)',
-  borderLeft: '2px solid var(--pixel-border)',
+  width: 320,
+  background: 'var(--color-bg-dark)',
+  borderLeft: '2px solid var(--color-accent)',
   display: 'flex',
   flexDirection: 'column',
   zIndex: 50,
@@ -21,10 +21,10 @@ const panelStyle: React.CSSProperties = {
 
 const headerStyle: React.CSSProperties = {
   padding: '8px 10px',
-  borderBottom: '2px solid var(--pixel-border)',
+  borderBottom: '2px solid var(--color-accent)',
   fontFamily: 'FS Pixel Sans, monospace',
-  fontSize: 14,
-  color: 'var(--pixel-header-text)',
+  fontSize: 18,
+  color: 'var(--color-accent-bright)',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -33,33 +33,33 @@ const headerStyle: React.CSSProperties = {
 const bodyStyle: React.CSSProperties = {
   flex: 1,
   overflowY: 'auto',
-  padding: '8px 10px',
+  padding: '6px 8px',
 };
 
 const inputRowStyle: React.CSSProperties = {
-  borderTop: '2px solid var(--pixel-border)',
+  borderTop: '2px solid var(--color-accent)',
   padding: '6px 8px',
   display: 'flex',
-  gap: 6,
+  gap: 4,
 };
 
 const inputStyle: React.CSSProperties = {
   flex: 1,
-  background: 'var(--color-bg-dark)',
-  border: '2px solid var(--pixel-border)',
+  background: 'var(--color-bg)',
+  border: '2px solid var(--color-border)',
   padding: '6px 8px',
   fontFamily: 'FS Pixel Sans, monospace',
-  fontSize: 13,
-  color: 'var(--pixel-text)',
+  fontSize: 15,
+  color: 'var(--color-text)',
   outline: 'none',
 };
 
 const sendBtnStyle: React.CSSProperties = {
-  background: 'var(--pixel-accent)',
-  border: '2px solid var(--pixel-border)',
-  padding: '6px 12px',
+  background: 'var(--color-accent)',
+  border: '2px solid var(--color-border)',
+  padding: '6px 10px',
   fontFamily: 'FS Pixel Sans, monospace',
-  fontSize: 13,
+  fontSize: 15,
   color: 'var(--color-text)',
   cursor: 'pointer',
   boxShadow: '2px 2px 0px var(--color-bg-dark)',
@@ -98,12 +98,12 @@ function Inspector({ agent, chatState, branch, onInterrupt, onRoleChange, agentI
     : null;
   const isStreaming = chatState?.isStreaming ?? false;
   return (
-    <div style={{ borderBottom: '2px solid var(--pixel-border)' }}>
-      <div onClick={() => setOpen((o) => !o)} style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 11, color: 'var(--pixel-text-dim)' }}>
+    <div style={{ borderBottom: '2px solid var(--color-border)' }}>
+      <div onClick={() => setOpen((o) => !o)} style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-muted)' }}>
         {open ? '▾' : '▸'} Inspector
       </div>
       {open && (
-        <div style={{ padding: '4px 10px 8px', fontSize: 10, color: 'var(--pixel-text-dim)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ padding: '4px 10px 8px', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 3 }}>
           <div>Model: {model || '(pending first turn)'}</div>
           {branch && <div>Branch: {branch}</div>}
           <div>Session: {agent.sessionId ? agent.sessionId.slice(0, 8) + '…' : '(none)'}</div>
@@ -112,14 +112,14 @@ function Inspector({ agent, chatState, branch, onInterrupt, onRoleChange, agentI
           <div>
             Role:{' '}
             <select value={agent.role} onChange={(e) => onRoleChange?.(e.target.value as AgentRole)}
-              style={{ marginLeft: 6, background: 'var(--pixel-bg)', color: 'var(--pixel-text)', border: '1px solid var(--pixel-border)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 10 }}>
+              style={{ marginLeft: 6, background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 12 }}>
               {(['generalist', 'coder', 'designer', 'writer', 'reviewer'] as AgentRole[]).map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
           <button onClick={() => onInterrupt(agentId)} disabled={!isStreaming}
-            style={{ marginTop: 4, border: '2px solid var(--pixel-border)', padding: '2px 6px', cursor: isStreaming ? 'pointer' : 'default', background: 'var(--pixel-bg)', color: isStreaming ? 'var(--color-status-error)' : 'var(--pixel-text-dim)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 10, alignSelf: 'flex-start' }}>
+            style={{ marginTop: 4, border: '2px solid var(--color-border)', padding: '2px 6px', cursor: isStreaming ? 'pointer' : 'default', background: 'var(--color-bg)', color: isStreaming ? 'var(--color-status-error)' : 'var(--color-text-muted)', fontFamily: 'FS Pixel Sans, sans-serif', fontSize: 12, alignSelf: 'flex-start' }}>
             ⏹ Interrupt
           </button>
         </div>
@@ -165,14 +165,14 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
           {isStreaming && (
             <button
               onClick={() => onInterrupt(agentId)}
-              style={{ background: 'var(--color-danger)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}
+              style={{ background: 'var(--color-danger)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, cursor: 'pointer', padding: '2px 8px' }}
             >
               Stop
             </button>
           )}
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--pixel-text-dim)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 16, cursor: 'pointer', padding: '0 4px' }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 18, cursor: 'pointer', padding: '0 4px' }}
           >
             ✕
           </button>
@@ -192,12 +192,12 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
 
       {/* Permission prompt */}
       {permission && (
-        <div style={{ padding: '6px 8px', background: 'var(--color-bg-dark)', borderBottom: '2px solid var(--color-warning)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--color-warning)' }}>
+        <div style={{ padding: '6px 8px', background: 'var(--color-bg-dark)', borderBottom: '2px solid var(--color-warning)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, color: 'var(--color-warning)' }}>
           <div style={{ marginBottom: 4 }}>Allow <strong>{permission.toolName}</strong>?</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-status-success)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
-            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName, true)} style={{ background: 'var(--color-status-active)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Always</button>
-            <button onClick={() => onDeny(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-danger)', border: '2px solid var(--pixel-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-status-success)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, cursor: 'pointer', padding: '2px 8px' }}>Allow</button>
+            <button onClick={() => onApprove(agentId, permission.requestId, permission.toolName, true)} style={{ background: 'var(--color-status-active)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, cursor: 'pointer', padding: '2px 8px' }}>Always</button>
+            <button onClick={() => onDeny(agentId, permission.requestId, permission.toolName)} style={{ background: 'var(--color-danger)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, cursor: 'pointer', padding: '2px 8px' }}>Deny</button>
           </div>
         </div>
       )}
@@ -205,7 +205,7 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
       {/* Body */}
       <div ref={bodyRef} style={bodyStyle}>
         {blocks.length === 0 && !isStreaming && (
-          <div style={{ color: 'var(--pixel-text-dim)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+          <div style={{ color: 'var(--color-text-muted)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 15, textAlign: 'center', marginTop: 40 }}>
             Chat started. Type a message.
           </div>
         )}
@@ -213,7 +213,7 @@ export function ChatPanel({ agentId, displayName, chatState, onSend, onInterrupt
           <ChatBlockRenderer key={block.id} block={block} />
         ))}
         {isStreaming && (
-          <div style={{ color: 'var(--pixel-accent)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13, marginTop: 4 }}>▌</div>
+          <div style={{ color: 'var(--color-accent)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 15, marginTop: 4 }}>▌</div>
         )}
       </div>
 

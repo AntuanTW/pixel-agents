@@ -4,37 +4,37 @@ import type { ChatBlock, SDKAgentErrorCode } from '../../../src/types.js';
 
 const styles = {
   bubble: (role: 'user' | 'assistant'): React.CSSProperties => ({
-    background: role === 'user' ? 'var(--pixel-accent)' : 'var(--pixel-bg)',
-    border: '2px solid var(--pixel-border)',
-    padding: '6px 8px',
+    background: role === 'user' ? 'var(--color-accent)' : 'var(--color-bg-dark)',
+    border: '2px solid var(--color-accent)',
+    padding: '8px 10px',
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
-    fontSize: 13,
+    fontSize: 15,
     lineHeight: 1.4,
-    color: 'var(--pixel-text)',
+    color: 'var(--color-text)',
   }),
   thinking: {
     padding: '4px 8px',
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
-    fontSize: 12,
-    color: 'var(--pixel-text-dim)',
+    fontSize: 13,
+    color: 'var(--color-text-muted)',
     fontStyle: 'italic' as const,
   },
   tool: {
     padding: '4px 8px',
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
-    fontSize: 12,
+    fontSize: 13,
     background: 'transparent',
-    borderLeft: '2px solid var(--pixel-accent)',
-    color: 'var(--pixel-text-dim)',
+    borderLeft: '2px solid var(--color-accent)',
+    color: 'var(--color-text-muted)',
   },
   error: {
     padding: '4px 8px',
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
-    fontSize: 12,
+    fontSize: 13,
     background: 'transparent',
     borderLeft: '2px solid var(--color-danger)',
     color: 'var(--color-status-error)',
@@ -43,8 +43,8 @@ const styles = {
     padding: '4px 8px',
     marginBottom: 4,
     fontFamily: 'FS Pixel Sans, monospace',
-    fontSize: 12,
-    color: 'var(--pixel-text-dim)',
+    fontSize: 13,
+    color: 'var(--color-text-muted)',
     fontStyle: 'italic' as const,
   },
 };
@@ -71,7 +71,7 @@ function BlockToolUse({ block, id }: { block: { toolId: string; toolName: string
         {block.isError ? ' ❌' : block.result !== undefined ? ' ✓' : ' …'}
       </div>
       {showResult && resultStr && (
-        <div style={{ marginTop: 4, maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>
+        <div style={{ marginTop: 4, maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 12 }}>
           {resultStr.slice(0, 2000)}
           {resultStr.length > 2000 ? '...' : ''}
         </div>

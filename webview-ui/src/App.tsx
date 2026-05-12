@@ -145,12 +145,14 @@ function App() {
   }, []);
 
   const handleClick = useCallback((agentId: number) => {
-    // If clicked agent is a sub-agent, focus the parent's terminal instead
-    const os = getOfficeState();
-    const meta = os.subagentMeta.get(agentId);
-    const focusId = meta ? meta.parentAgentId : agentId;
-    vscode.postMessage({ type: 'focusAgent', id: focusId });
-  }, []);
+    // Toggle chat panel: click same agent → close; different → switch
+    if (openPanelAgentId === agentId) {
+      setOpenPanelAgentId(null);
+    } else {
+      setOpenPanelAgentId(agentId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPanelAgentId]);
 
   const handleSend = useCallback((agentId: number, text: string) => {
     chatState.appendUserPrompt(agentId, text);
@@ -210,6 +212,7 @@ function App() {
       <OfficeCanvas
         officeState={officeState}
         onClick={handleClick}
+        onDeselect={() => setOpenPanelAgentId(null)}
         isEditMode={editor.isEditMode}
         editorState={editorState}
         onEditorTileAction={editor.handleEditorTileAction}
