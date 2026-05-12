@@ -101,6 +101,14 @@ function browserMockAssetsPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [tailwindcss(), react(), browserMockAssetsPlugin()],
+  server: {
+    proxy: {
+      '/ws': {
+        target: 'http://localhost:4000',
+        ws: true,
+      },
+    },
+  },
   build: {
     outDir: '../dist/webview',
     emptyOutDir: true,

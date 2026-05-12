@@ -91,15 +91,34 @@ async function main() {
       esbuildProblemMatcherPlugin,
     ],
   });
-  if (watch) {
-    await ctx.watch();
-  } else {
-    await ctx.rebuild();
-    await ctx.dispose();
-    // Copy assets and hooks after build
-    copyAssets();
-    buildHooks();
-  }
+
+// Standalone backend (separate entry point, no vscode external)
+const standaloneCtx = await esbuild.context({
+  entryPoints: ['standalone/server.ts'],
+  bundle: true,
+  format: 'cjs',
+  minify: production,
+  sourcemap: !production,
+  sourcesContent: false,
+  platform: 'node',
+  outfile: 'dist/standalone/server.js',
+  external: ['@anthropic-ai/claude-agent-sdk'],
+  logLevel: 'silent',
+  plugins: [esbuildProblemMatcherPlugin],
+});
+
+if (watch) {
+  await ctx.watch();
+  await standaloneCtx.watch();
+} else {
+  await ctx.rebuild();
+  await standaloneCtx.rebuild();
+  await ctx.dispose();
+  await standaloneCtx.dispose();
+  // Copy assets and hooks after build
+  copyAssets();
+  buildHooks();
+}
 }
 
 main().catch((e) => {
