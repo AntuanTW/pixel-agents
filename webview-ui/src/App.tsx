@@ -423,7 +423,7 @@ function App() {
         <ChatPanel
           key={openPanelAgentId}
           agentId={openPanelAgentId}
-          displayName={`Agent ${openPanelAgentId}`}
+          displayName={officeState.getSDKAgent(openPanelAgentId)?.displayName ?? `Agent ${openPanelAgentId}`}
           chatState={chatState.chatMap.get(openPanelAgentId)!}
           onSend={handleSend}
           onInterrupt={handleInterrupt}
