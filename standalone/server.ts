@@ -133,13 +133,16 @@ function sendAllAssets(ws?: WebSocket): void {
   if (characters) sendFn({ type: 'characterSpritesLoaded', characters });
 
   const floors = loadJsonAsset('floors.json');
-  if (floors) sendFn({ type: 'floorTilesLoaded', floors });
+  if (floors) sendFn({ type: 'floorTilesLoaded', sprites: floors });
 
   const walls = loadJsonAsset('walls.json');
-  if (walls) sendFn({ type: 'wallTilesLoaded', walls });
+  if (walls) sendFn({ type: 'wallTilesLoaded', sets: walls });
 
-  const furniture = loadJsonAsset('furniture.json');
-  if (furniture) sendFn({ type: 'furnitureAssetsLoaded', furniture });
+  const furnitureSprites = loadJsonAsset('furniture.json');
+  const furnitureCatalog = loadJsonAsset('furniture-catalog.json');
+  if (furnitureSprites && furnitureCatalog) {
+    sendFn({ type: 'furnitureAssetsLoaded', catalog: furnitureCatalog, sprites: furnitureSprites });
+  }
 
   const layout = readLayoutFromFile();
   sendFn({ type: 'layoutLoaded', layout: layout ?? null, wasReset: false });
