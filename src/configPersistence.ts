@@ -19,8 +19,8 @@ function getConfigFilePath(): string {
 }
 
 export function readConfig(): PixelAgentsConfig {
-  const filePath = getConfigFilePath();
   try {
+    const filePath = getConfigFilePath();
     if (!fs.existsSync(filePath)) return { ...DEFAULT_CONFIG };
     const raw = fs.readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<PixelAgentsConfig>;

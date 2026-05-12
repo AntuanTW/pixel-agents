@@ -12,8 +12,8 @@ function getAgentsFilePath(): string {
 }
 
 export function readAgentsFile(): AgentsFile {
-  const filePath = getAgentsFilePath();
   try {
+    const filePath = getAgentsFilePath();
     if (!fs.existsSync(filePath)) return { ...EMPTY_FILE };
     const raw = fs.readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as AgentsFile;

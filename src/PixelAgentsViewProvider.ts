@@ -117,25 +117,31 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.initHooks();
-    this._agentRunner = new AgentRunner((event) => {
-      // Buffer events when webview panel is not visible
-      if (event.kind === 'sdkMessage' || event.kind === 'turnDone' || event.kind === 'error' || event.kind === 'queued' || event.kind === 'permissionRequest') {
-        const buffer = this._chatEventBuffers.get(event.agentId) ?? [];
-        if (buffer.length < CHAT_EVENT_BUFFER_MAX) buffer.push(event);
-        this._chatEventBuffers.set(event.agentId, buffer);
+    try {
+      this._agentRunner = new AgentRunner((event) => {
+        // Buffer events when webview panel is not visible
+        if (event.kind === 'sdkMessage' || event.kind === 'turnDone' || event.kind === 'error' || event.kind === 'queued' || event.kind === 'permissionRequest') {
+          const buffer = this._chatEventBuffers.get(event.agentId) ?? [];
+          if (buffer.length < CHAT_EVENT_BUFFER_MAX) buffer.push(event);
+          this._chatEventBuffers.set(event.agentId, buffer);
+        }
+        // Send speech bubble for permission requests
+        if (event.kind === 'permissionRequest') {
+          this.webview?.postMessage({ type: 'agentToolPermission', id: event.agentId });
+        }
+        // Always forward to webview
+        this.webview?.postMessage({ type: 'agentRunnerEvent', event });
+      });
+      // Restore persisted agents on activation
+      const file = readAgentsFile();
+      for (const persisted of file.agents) {
+        const state = AgentRunner.fromPersistedAgent(persisted);
+        this._agentRunner.addAgent(state);
       }
-      // Send speech bubble for permission requests
-      if (event.kind === 'permissionRequest') {
-        this.webview?.postMessage({ type: 'agentToolPermission', id: event.agentId });
-      }
-      // Always forward to webview
-      this.webview?.postMessage({ type: 'agentRunnerEvent', event });
-    });
-    // Restore persisted agents on activation
-    const file = readAgentsFile();
-    for (const persisted of file.agents) {
-      const state = AgentRunner.fromPersistedAgent(persisted);
-      this._agentRunner.addAgent(state);
+    } catch (err) {
+      console.error('[Pixel Agents] Failed to initialize AgentRunner:', err);
+      // Fallback AgentRunner with no-op callback so rest of extension doesn't crash
+      this._agentRunner = new AgentRunner(() => {});
     }
   }
 
