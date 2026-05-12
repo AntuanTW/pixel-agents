@@ -476,8 +476,8 @@ function App() {
         <RepoPicker
           recentRepos={recentRepos}
           workDirRepos={workDirRepos}
-          onPick={(path) => vscode.postMessage({ type: 'pickRecentRepo', repoPath: path })}
-          onBrowse={() => vscode.postMessage({ type: 'browseRepo' })}
+          onPick={(path, palette) => vscode.postMessage({ type: 'pickRecentRepo', repoPath: path, palette })}
+          onBrowse={() => vscode.postMessage({ type: 'browseRepo', palette: 0 })}
           onCancel={() => setShowRepoPicker(false)}
         />
       )}

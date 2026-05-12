@@ -878,10 +878,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           });
         }
       } else if (message.type === 'pickRecentRepo') {
-        const { repoPath } = message as { repoPath: string };
+        const { repoPath, palette: requestedPalette } = message as { repoPath: string; palette?: number };
         const displayName = repoPath.split('/').pop() ?? repoPath;
         const id = allocateNextAgentId();
-        const { palette, hueShift } = this._pickDiversePalette();
+        const { palette, hueShift } = typeof requestedPalette === 'number'
+          ? { palette: requestedPalette, hueShift: 0 }
+          : this._pickDiversePalette();
         const state: SDKAgentState = {
           id,
           repoPath,

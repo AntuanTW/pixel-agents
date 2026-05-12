@@ -125,7 +125,12 @@ export const DISMISS_BUBBLE_FAST_FADE_SEC = 0.3;
 export const INACTIVE_SEAT_TIMER_MIN_SEC = 3.0;
 export const INACTIVE_SEAT_TIMER_RANGE_SEC = 2.0;
 /** Default/fallback palette count (bundled characters). Actual count comes from getLoadedCharacterCount(). */
-export const PALETTE_COUNT = 6;
+export const PALETTE_COUNT = 12;
+
+export const CHARACTER_NAMES: Record<number, string> = {
+  0: 'Blue', 1: 'Green', 2: 'Orange', 3: 'Pink', 4: 'Purple', 5: 'Red',
+  6: 'Goku', 7: 'Vegeta', 8: 'Piccolo', 9: 'Gohan', 10: 'Trunks', 11: 'Krillin',
+};
 export const HUE_SHIFT_MIN_DEG = 45;
 export const HUE_SHIFT_RANGE_DEG = 271;
 export const AUTO_ON_FACING_DEPTH = 3;
