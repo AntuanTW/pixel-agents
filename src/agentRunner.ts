@@ -1,15 +1,25 @@
- 
-const { query: sdkQuery } = require('@anthropic-ai/claude-agent-sdk') as {
-  query: (params: { prompt: string; options?: SDKOptions }) => SDKQuery;
-};
-
 import { updateAgentSessionId } from './agentsPersistence.js';
 import { ROLE_PROMPTS, SAFE_TOOLS } from './constants.js';
 import type { PersistedSDKAgent, SDKAgentErrorCode, SDKAgentState } from './types.js';
 
+// ── Lazy SDK import ────────────────────────────────────────────────────────────
+// Dynamic import prevents esbuild from bundling the SDK, avoiding its
+// import.meta.url breakage when ESM is compiled to CJS.
+
+type SdkQueryFn = (params: { prompt: string; options?: Record<string, unknown> }) => SDKQuery;
+
+let sdkQueryFn: SdkQueryFn | null = null;
+
+async function getSdkQuery(): Promise<SdkQueryFn> {
+  if (sdkQueryFn) return sdkQueryFn;
+  const sdk = await import('@anthropic-ai/claude-agent-sdk') as { query: SdkQueryFn };
+  sdkQueryFn = sdk.query;
+  return sdkQueryFn;
+}
+
 // ── Local SDK type declarations ───────────────────────────────────────────────
-// These mirror the SDK's exported types to avoid ESM→CJS type-import issues.
-// The SDK's `query()` is bundled by esbuild at build time.
+// These mirror the SDK's exported types. The SDK is externalized in esbuild
+// to preserve import.meta.url resolution.
 
 interface SDKOptions {
   cwd?: string;
@@ -176,6 +186,7 @@ export class AgentRunner {
       });
     };
 
+    const sdkQuery = await getSdkQuery();
     const q = sdkQuery({ prompt, options });
     this.inflight.set(agentId, q);
 
