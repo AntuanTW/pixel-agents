@@ -1,3 +1,28 @@
+// Auto-scale UI to match viewport width.
+// The pixel office was designed for a ~500px wide VS Code panel with 22px base font.
+// In a wide browser tab, text would be unreadable without scaling.
+function updateScale(): void {
+  const root = document.documentElement;
+  const width = window.innerWidth;
+  const scale = Math.min(1.4, Math.max(1, width / 500));
+
+  // Apply scale factor to CSS custom properties via inline style on :root.
+  // These override the Tailwind --text-* values defined in index.css.
+  root.style.setProperty('--text-2xs', `${Math.round(16 * scale)}px`);
+  root.style.setProperty('--text-xs', `${Math.round(18 * scale)}px`);
+  root.style.setProperty('--text-sm', `${Math.round(20 * scale)}px`);
+  root.style.setProperty('--text-base', `${Math.round(22 * scale)}px`);
+  root.style.setProperty('--text-lg', `${Math.round(26 * scale)}px`);
+  root.style.setProperty('--text-xl', `${Math.round(30 * scale)}px`);
+  root.style.setProperty('--text-2xl', `${Math.round(36 * scale)}px`);
+  root.style.setProperty('--text-3xl', `${Math.round(44 * scale)}px`);
+  root.style.setProperty('--text-4xl', `${Math.round(52 * scale)}px`);
+  root.style.setProperty('--text-5xl', `${Math.round(64 * scale)}px`);
+}
+
+updateScale();
+window.addEventListener('resize', updateScale);
+
 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const ws = new WebSocket(`${protocol}//${location.host}/ws`);
 const sendQueue: unknown[] = [];
