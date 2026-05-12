@@ -1,7 +1,5 @@
-// TODO(Standalone version): Replace vscode.Webview with MessageSender interface from core/src/messages.ts
 // TODO(Standalone version): Move timerManager and types to server/src/ to eliminate cross-boundary imports
 import * as path from 'path';
-import type * as vscode from 'vscode';
 
 import { cancelPermissionTimer, cancelWaitingTimer } from '../../src/timerManager.js';
 import type { AgentState } from '../../src/types.js';
@@ -10,6 +8,13 @@ import type { AgentEvent, HookProvider } from './provider.js';
 import { getInlineTeammates, hasInlineTeammates } from './teamUtils.js';
 
 const debug = process.env.PIXEL_AGENTS_DEBUG !== '0';
+
+/** Minimal interface for sending messages to the frontend.
+ *  vscode.Webview satisfies this in the extension; the standalone
+ *  backend passes a wrapper around its WebSocket broadcast. */
+export interface MessageSender {
+  postMessage(msg: unknown): void;
+}
 
 /** Normalized hook event received from any provider's hook script via the HTTP server. */
 export interface HookEvent {
@@ -88,7 +93,7 @@ export class HookEventHandler {
     private agents: Map<number, AgentState>,
     private waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
     private permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
-    private getWebview: () => vscode.Webview | undefined,
+    private getWebview: () => MessageSender | undefined,
     private provider: HookProvider,
     private watchAllSessionsRef?: { current: boolean },
   ) {}
@@ -373,7 +378,7 @@ export class HookEventHandler {
     normEvent: Extract<AgentEvent, { kind: 'sessionEnd' }>,
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     const reason = normEvent.reason;
     if (debug)
@@ -416,7 +421,7 @@ export class HookEventHandler {
     normEvent: Extract<AgentEvent, { kind: 'toolStart' }>,
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     const toolName = normEvent.toolName;
     const toolInput = (normEvent.input as Record<string, unknown> | undefined) ?? {};
@@ -471,7 +476,7 @@ export class HookEventHandler {
   private handlePostToolUse(
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     if (agent.currentHookToolId) {
       // Suppress tool display when lead has inline teammates (see handlePreToolUse)
@@ -505,7 +510,7 @@ export class HookEventHandler {
     event: HookEvent,
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     const agentType = this.provider.team?.extractTeammateNameFromEvent(event) ?? 'unknown';
 
@@ -578,7 +583,7 @@ export class HookEventHandler {
   private handleSubagentStop(
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     // Check if this agent has inline teammates (independent agents with leadAgentId).
     // Just mark them waiting -- SubagentStop fires per-task-iteration; teammates may
@@ -626,7 +631,7 @@ export class HookEventHandler {
   private handlePermissionRequest(
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     // When lead has inline teammates, route permission to the teammates instead.
     // The hook fires on the lead's session_id but the permission is for a teammate.
@@ -660,7 +665,7 @@ export class HookEventHandler {
   private handleStop(
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     this.markAgentWaiting(agent, agentId, webview);
   }
@@ -675,7 +680,7 @@ export class HookEventHandler {
     event: HookEvent,
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     const agentType = this.provider.team?.extractTeammateNameFromEvent(event);
     const inlineTeammates = getInlineTeammates(agentId, this.agents);
@@ -747,7 +752,7 @@ export class HookEventHandler {
   private markAgentWaiting(
     agent: AgentState,
     agentId: number,
-    webview: vscode.Webview | undefined,
+    webview: MessageSender | undefined,
   ): void {
     cancelWaitingTimer(agentId, this.waitingTimers);
     cancelPermissionTimer(agentId, this.permissionTimers);
