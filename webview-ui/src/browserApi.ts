@@ -41,6 +41,20 @@ ws.onclose = () => { /* connection lost */ };
 
 export const vscode = {
   postMessage: (msg: unknown) => {
+    // Intercept messages that need a path (browsers can't open native folder pickers).
+    // Show a prompt() dialog so the user can type/paste a path.
+    const m = msg as { type: string; path?: string };
+    if (m.type === 'addExternalAssetDirectory' && !m.path) {
+      const p = prompt('Enter the path to the asset directory:');
+      if (!p) return;
+      m.path = p;
+    }
+    if (m.type === 'addWorkDirectory' && !m.path) {
+      const p = prompt('Enter the path to the work directory:');
+      if (!p) return;
+      m.path = p;
+    }
+
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(msg));
     } else {

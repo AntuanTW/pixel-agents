@@ -268,11 +268,14 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
       break;
     }
 
-    case 'removeSdkAgent': {
-      const { agentId } = payload as { agentId: number };
-      agentRunner.removeAgent(agentId);
-      removePersistedAgent(agentId);
-      reply({ type: 'sdkAgentRemoved', agentId });
+    case 'removeSdkAgent':
+    case 'closeAgent': {
+      const { agentId, id } = payload as { agentId?: number; id?: number };
+      const agentToRemove = agentId ?? id;
+      if (agentToRemove == null) break;
+      agentRunner.removeAgent(agentToRemove);
+      removePersistedAgent(agentToRemove);
+      broadcast(wss, { type: 'agentClosed', id: agentToRemove });
       break;
     }
 
