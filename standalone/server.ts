@@ -207,10 +207,12 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
     }
 
     case 'createAgent': {
-      const { repoPath } = payload as { repoPath: string };
+      const { repoPath } = payload as { repoPath: string; palette?: number };
       const displayName = repoPath.split('/').pop() ?? repoPath;
       const id = allocateNextAgentId();
-      const { palette, hueShift } = pickDiversePalette();
+      const { palette, hueShift } = payload.palette != null
+        ? { palette: payload.palette, hueShift: 0 }
+        : pickDiversePalette();
       const state: SDKAgentState = {
         id, repoPath, displayName, sessionId: null,
         role: 'generalist' as AgentRole, palette, hueShift, seatId: null,
@@ -227,10 +229,12 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
     }
 
     case 'pickRecentRepo': {
-      const { repoPath } = payload as { repoPath: string };
+      const { repoPath, palette: msgPalette } = payload as { repoPath: string; palette?: number };
       const displayName = repoPath.split('/').pop() ?? repoPath;
       const id = allocateNextAgentId();
-      const { palette, hueShift } = pickDiversePalette();
+      const { palette, hueShift } = msgPalette != null
+        ? { palette: msgPalette, hueShift: 0 }
+        : pickDiversePalette();
       const state: SDKAgentState = {
         id, repoPath, displayName, sessionId: null,
         role: 'generalist' as AgentRole, palette, hueShift, seatId: null,
