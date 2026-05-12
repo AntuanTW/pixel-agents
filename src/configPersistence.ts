@@ -7,11 +7,13 @@ import { CONFIG_FILE_NAME, LAYOUT_FILE_DIR, RECENT_REPOS_LIMIT } from './constan
 interface PixelAgentsConfig {
   externalAssetDirectories: string[];
   recentRepos: string[];
+  workDirectories: string[];
 }
 
 const DEFAULT_CONFIG: PixelAgentsConfig = {
   externalAssetDirectories: [],
   recentRepos: [],
+  workDirectories: [],
 };
 
 function getConfigFilePath(): string {
@@ -30,6 +32,9 @@ export function readConfig(): PixelAgentsConfig {
         : [],
       recentRepos: Array.isArray(parsed.recentRepos)
         ? parsed.recentRepos.filter((r): r is string => typeof r === 'string')
+        : [],
+      workDirectories: Array.isArray(parsed.workDirectories)
+        ? parsed.workDirectories.filter((d): d is string => typeof d === 'string')
         : [],
     };
   } catch (err) {
@@ -59,5 +64,21 @@ export function addRecentRepo(repoPath: string): void {
   const config = readConfig();
   const filtered = config.recentRepos.filter((r) => r !== repoPath);
   config.recentRepos = [repoPath, ...filtered].slice(0, RECENT_REPOS_LIMIT);
+  writeConfig(config);
+}
+
+/** Add a work directory to scan for repos. */
+export function addWorkDirectory(dirPath: string): void {
+  const config = readConfig();
+  if (!config.workDirectories.includes(dirPath)) {
+    config.workDirectories.push(dirPath);
+    writeConfig(config);
+  }
+}
+
+/** Remove a work directory. */
+export function removeWorkDirectory(dirPath: string): void {
+  const config = readConfig();
+  config.workDirectories = config.workDirectories.filter((d) => d !== dirPath);
   writeConfig(config);
 }

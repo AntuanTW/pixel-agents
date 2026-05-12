@@ -954,6 +954,33 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
             agent: this._agentRunner.toPersistedAgent(state),
           });
         }
+      } else if (message.type === 'scanWorkDirectories') {
+        const config = readConfig();
+        const repos: string[] = [];
+        for (const dir of config.workDirectories) {
+          try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (!entry.isDirectory()) continue;
+              const subPath = path.join(dir, entry.name);
+              if (fs.existsSync(path.join(subPath, '.git'))) {
+                repos.push(subPath);
+              } else {
+                try {
+                  const subEntries = fs.readdirSync(subPath, { withFileTypes: true });
+                  for (const sub of subEntries) {
+                    if (!sub.isDirectory()) continue;
+                    const subSubPath = path.join(subPath, sub.name);
+                    if (fs.existsSync(path.join(subSubPath, '.git'))) {
+                      repos.push(subSubPath);
+                    }
+                  }
+                } catch { /* skip unreadable subdirs */ }
+              }
+            }
+          } catch { /* skip unreadable dirs */ }
+        }
+        this.webview?.postMessage({ type: 'workDirectoryRepos', repos });
       }
     });
 
