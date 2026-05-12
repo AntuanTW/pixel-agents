@@ -87,13 +87,32 @@ function browserMockAssetsPlugin(): Plugin {
     },
     // Build output includes lightweight metadata consumed by browser runtime.
     closeBundle() {
-      fs.mkdirSync(distAssetsDir, { recursive: true });
+      const decodedDir = path.join(distAssetsDir, 'decoded');
+      fs.mkdirSync(decodedDir, { recursive: true });
 
       const catalog = buildFurnitureCatalog(assetsDir);
       fs.writeFileSync(path.join(distAssetsDir, 'furniture-catalog.json'), JSON.stringify(catalog));
       fs.writeFileSync(
         path.join(distAssetsDir, 'asset-index.json'),
         JSON.stringify(buildAssetIndex(assetsDir)),
+      );
+
+      // Pre-decode sprites for standalone backend (no PNG decoding at runtime)
+      fs.writeFileSync(
+        path.join(decodedDir, 'characters.json'),
+        JSON.stringify(decodeAllCharacters(assetsDir)),
+      );
+      fs.writeFileSync(
+        path.join(decodedDir, 'floors.json'),
+        JSON.stringify(decodeAllFloors(assetsDir)),
+      );
+      fs.writeFileSync(
+        path.join(decodedDir, 'walls.json'),
+        JSON.stringify(decodeAllWalls(assetsDir)),
+      );
+      fs.writeFileSync(
+        path.join(decodedDir, 'furniture.json'),
+        JSON.stringify(decodeAllFurniture(assetsDir, catalog)),
       );
     },
   };
