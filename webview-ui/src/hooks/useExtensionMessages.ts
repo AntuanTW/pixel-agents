@@ -71,6 +71,7 @@ interface ExtensionMessageState {
   // -- SDK agent chat state --
   chatState: ReturnType<typeof useChatState>;
   recentRepos: string[];
+  workDirRepos: string[];
   openPanelAgentId: number | null;
   setOpenPanelAgentId: (id: number | null) => void;
   showRepoPicker: boolean;
@@ -117,6 +118,7 @@ export function useExtensionMessages(
   const [hooksInfoShown, setHooksInfoShown] = useState(true);
   const chatState = useChatState();
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
+  const [workDirRepos, setWorkDirRepos] = useState<string[]>([]);
   const [openPanelAgentId, setOpenPanelAgentId] = useState<number | null>(null);
   const [showRepoPicker, setShowRepoPicker] = useState(false);
   const [hasLegacyAgents, setHasLegacyAgents] = useState(false);
@@ -553,6 +555,8 @@ export function useExtensionMessages(
       } else if (msg.type === 'chatHistory') {
         const chMsg = msg as { agentId: number; blocks: ChatBlock[]; truncatedAt?: number; error?: string };
         chatState.initAgent(chMsg.agentId, chMsg.blocks ?? []);
+      } else if (msg.type === 'workDirectoryRepos') {
+        setWorkDirRepos((msg as { repos: string[] }).repos);
       } else if (msg.type === 'sdkAgentCreated') {
         const sdkMsg = msg as { agent: PersistedSDKAgent; recentRepos?: string[] };
         os.addSDKAgent(sdkMsg.agent, false);
@@ -577,6 +581,12 @@ export function useExtensionMessages(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getOfficeState]);
 
+  useEffect(() => {
+    if (showRepoPicker) {
+      vscode.postMessage({ type: 'scanWorkDirectories' });
+    }
+  }, [showRepoPicker]);
+
   return {
     agents,
     selectedAgent,
@@ -600,6 +610,7 @@ export function useExtensionMessages(
     // SDK agent chat state
     chatState,
     recentRepos,
+    workDirRepos,
     openPanelAgentId,
     setOpenPanelAgentId,
     showRepoPicker,

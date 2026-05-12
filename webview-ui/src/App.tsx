@@ -14,6 +14,7 @@ import { Tooltip } from './components/Tooltip.js';
 import { Modal } from './components/ui/Modal.js';
 import { VersionIndicator } from './components/VersionIndicator.js';
 import { ZoomControls } from './components/ZoomControls.js';
+import type { AgentChatState } from './hooks/useChatState.js';
 import { useEditorActions } from './hooks/useEditorActions.js';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js';
 import { useExtensionMessages } from './hooks/useExtensionMessages.js';
@@ -76,6 +77,7 @@ function App() {
     hooksInfoShown,
     chatState,
     recentRepos,
+    workDirRepos,
     openPanelAgentId,
     setOpenPanelAgentId,
     showRepoPicker,
@@ -431,9 +433,47 @@ function App() {
         />
       )}
 
+      {/* Approvals dashboard */}
+      {(() => {
+        const pending: { agentId: number; perm: NonNullable<AgentChatState['pendingPermission']> }[] = [];
+        chatState.chatMap.forEach((state, agentId) => {
+          if (state.pendingPermission) {
+            pending.push({ agentId, perm: state.pendingPermission });
+          }
+        });
+        if (pending.length === 0) return null;
+        return (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60,
+            background: 'var(--color-bg-dark)', borderBottom: '2px solid var(--color-warning)',
+            padding: '6px 10px', fontFamily: 'FS Pixel Sans, monospace', fontSize: 13,
+            color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: 8,
+            overflowX: 'auto',
+          }}>
+            <strong>Approvals needed:</strong>
+            {pending.map(({ agentId, perm }) => (
+              <span key={perm.requestId} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>Agent {agentId}: {perm.toolName}</span>
+                <button onClick={() => {
+                  setOpenPanelAgentId(agentId);
+                  chatState.clearPermission(agentId);
+                  vscode.postMessage({ type: 'permissionResponse', requestId: perm.requestId, allowed: true, always: false, toolName: perm.toolName, agentId });
+                }} style={{ background: 'var(--color-status-success)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}>Allow</button>
+                <button onClick={() => {
+                  setOpenPanelAgentId(agentId);
+                  vscode.postMessage({ type: 'permissionResponse', requestId: perm.requestId, allowed: false, always: false, toolName: perm.toolName, agentId });
+                  chatState.clearPermission(agentId);
+                }} style={{ background: 'var(--color-danger)', border: '2px solid var(--color-border)', color: 'var(--color-text)', fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}>Deny</button>
+              </span>
+            ))}
+          </div>
+        );
+      })()}
+
       {showRepoPicker && (
         <RepoPicker
           recentRepos={recentRepos}
+          workDirRepos={workDirRepos}
           onPick={(path) => vscode.postMessage({ type: 'pickRecentRepo', repoPath: path })}
           onBrowse={() => vscode.postMessage({ type: 'browseRepo' })}
           onCancel={() => setShowRepoPicker(false)}

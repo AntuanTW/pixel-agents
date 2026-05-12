@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const overlayStyle: React.CSSProperties = {
   position: 'absolute',
@@ -64,24 +64,64 @@ const cancelStyle: React.CSSProperties = {
 
 interface RepoPickerProps {
   recentRepos: string[];
+  workDirRepos?: string[];
   onPick: (repoPath: string) => void;
   onBrowse: () => void;
   onCancel: () => void;
 }
 
-export function RepoPicker({ recentRepos, onPick, onBrowse, onCancel }: RepoPickerProps) {
+const searchInputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '6px 8px',
+  fontFamily: 'FS Pixel Sans, monospace',
+  fontSize: 13,
+  background: 'var(--color-bg-thumb)',
+  border: '2px solid var(--pixel-border)',
+  color: 'var(--pixel-text)',
+  outline: 'none',
+  marginBottom: 10,
+};
+
+export function RepoPicker({ recentRepos, workDirRepos = [], onPick, onBrowse, onCancel }: RepoPickerProps) {
+  const [search, setSearch] = useState('');
+
+  const filter = (repos: string[]) => {
+    if (!search) return repos;
+    const q = search.toLowerCase();
+    return repos.filter((r) => r.toLowerCase().includes(q));
+  };
+
+  const filteredWorkDir = filter(workDirRepos);
+  const filteredRecent = filter(recentRepos);
+  const hasAny = workDirRepos.length > 0 || recentRepos.length > 0;
+
   return (
     <div style={overlayStyle}>
       <div style={modalStyle}>
         <div style={titleStyle}>New Agent — Pick a Repo</div>
 
-        {recentRepos.length > 0 && (
+        <input
+          type="text"
+          placeholder="Search repos..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={searchInputStyle}
+        />
+
+        {!hasAny && (
+          <div style={{ fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--pixel-text-dim)', marginBottom: 6 }}>
+            Scanning...
+          </div>
+        )}
+
+        {filteredWorkDir.length > 0 && (
           <>
             <div style={{ fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--pixel-text-dim)', marginBottom: 6 }}>
-              Recent
+              Workspace
             </div>
             <ul style={listStyle}>
-              {recentRepos.map((repo) => (
+              {filteredWorkDir.map((repo) => (
                 <li
                   key={repo}
                   style={itemStyle}
@@ -95,6 +135,34 @@ export function RepoPicker({ recentRepos, onPick, onBrowse, onCancel }: RepoPick
               ))}
             </ul>
           </>
+        )}
+
+        {filteredRecent.length > 0 && (
+          <>
+            <div style={{ fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--pixel-text-dim)', marginBottom: 6 }}>
+              Recent
+            </div>
+            <ul style={listStyle}>
+              {filteredRecent.map((repo) => (
+                <li
+                  key={repo}
+                  style={itemStyle}
+                  onClick={() => onPick(repo)}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-thumb)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  {repo.split('/').pop() || repo}
+                  <div style={{ fontSize: 11, color: 'var(--pixel-text-dim)' }}>{repo}</div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {hasAny && filteredWorkDir.length === 0 && filteredRecent.length === 0 && (
+          <div style={{ fontFamily: 'FS Pixel Sans, monospace', fontSize: 12, color: 'var(--pixel-text-dim)', marginBottom: 6, textAlign: 'center' }}>
+            No repos match &quot;{search}&quot;
+          </div>
         )}
 
         <button style={buttonStyle} onClick={onBrowse}>
