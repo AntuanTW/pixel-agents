@@ -60,6 +60,7 @@ interface ExtensionMessageState {
   loadedAssets?: { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> };
   workspaceFolders: WorkspaceFolder[];
   externalAssetDirectories: string[];
+  workDirectories: string[];
   lastSeenVersion: string;
   extensionVersion: string;
   watchAllSessions: boolean;
@@ -110,6 +111,7 @@ export function useExtensionMessages(
   >();
   const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
   const [externalAssetDirectories, setExternalAssetDirectories] = useState<string[]>([]);
+  const [workDirectories, setWorkDirectories] = useState<string[]>([]);
   const [lastSeenVersion, setLastSeenVersion] = useState('');
   const [extensionVersion, setExtensionVersion] = useState('');
   const [watchAllSessions, setWatchAllSessions] = useState(false);
@@ -495,6 +497,9 @@ export function useExtensionMessages(
         if (Array.isArray(msg.externalAssetDirectories)) {
           setExternalAssetDirectories(msg.externalAssetDirectories as string[]);
         }
+        if (Array.isArray(msg.workDirectories)) {
+          setWorkDirectories(msg.workDirectories as string[]);
+        }
         if (typeof msg.lastSeenVersion === 'string') {
           setLastSeenVersion(msg.lastSeenVersion as string);
         }
@@ -599,6 +604,7 @@ export function useExtensionMessages(
     loadedAssets,
     workspaceFolders,
     externalAssetDirectories,
+    workDirectories,
     lastSeenVersion,
     extensionVersion,
     watchAllSessions,

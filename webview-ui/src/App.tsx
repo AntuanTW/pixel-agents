@@ -67,6 +67,7 @@ function App() {
     loadedAssets,
     workspaceFolders,
     externalAssetDirectories,
+    workDirectories,
     lastSeenVersion,
     extensionVersion,
     watchAllSessions,
@@ -391,6 +392,7 @@ function App() {
         alwaysShowOverlay={alwaysShowOverlay}
         onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
         externalAssetDirectories={externalAssetDirectories}
+        workDirectories={workDirectories}
         watchAllSessions={watchAllSessions}
         onToggleWatchAllSessions={() => {
           const newVal = !watchAllSessions;

@@ -15,6 +15,7 @@ interface SettingsModalProps {
   alwaysShowOverlay: boolean;
   onToggleAlwaysShowOverlay: () => void;
   externalAssetDirectories: string[];
+  workDirectories: string[];
   watchAllSessions: boolean;
   onToggleWatchAllSessions: () => void;
   hooksEnabled: boolean;
@@ -29,6 +30,7 @@ export function SettingsModal({
   alwaysShowOverlay,
   onToggleAlwaysShowOverlay,
   externalAssetDirectories,
+  workDirectories,
   watchAllSessions,
   onToggleWatchAllSessions,
   hooksEnabled,
@@ -82,6 +84,32 @@ export function SettingsModal({
             variant="ghost"
             size="sm"
             onClick={() => vscode.postMessage({ type: 'removeExternalAssetDirectory', path: dir })}
+            className="shrink-0"
+          >
+            x
+          </Button>
+        </div>
+      ))}
+      <MenuItem
+        onClick={() => {
+          vscode.postMessage({ type: 'addWorkDirectory' });
+          onClose();
+        }}
+      >
+        Add Work Directory
+      </MenuItem>
+      {workDirectories.map((dir) => (
+        <div key={dir} className="flex items-center justify-between py-4 px-10 gap-8">
+          <span
+            className="text-xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap"
+            title={dir}
+          >
+            {dir}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => vscode.postMessage({ type: 'removeWorkDirectory', path: dir })}
             className="shrink-0"
           >
             x

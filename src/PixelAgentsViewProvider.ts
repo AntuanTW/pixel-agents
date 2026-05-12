@@ -39,7 +39,7 @@ import {
   sendFloorTilesToWebview,
   sendWallTilesToWebview,
 } from './assetLoader.js';
-import { readConfig, writeConfig } from './configPersistence.js';
+import { addWorkDirectory, readConfig, removeWorkDirectory, writeConfig } from './configPersistence.js';
 import {
   GLOBAL_KEY_ALWAYS_SHOW_LABELS,
   GLOBAL_KEY_HOOKS_ENABLED,
@@ -553,6 +553,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           hooksEnabled,
           hooksInfoShown,
           externalAssetDirectories: config.externalAssetDirectories,
+          workDirectories: config.workDirectories,
           hasLegacyAgents: legacyCount > 0,
           legacyAgentCount: legacyCount,
         });
@@ -807,6 +808,25 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
         this.webview?.postMessage({
           type: 'externalAssetDirectoriesUpdated',
           dirs: cfg.externalAssetDirectories,
+        });
+      } else if (message.type === 'addWorkDirectory') {
+        const uris2 = await vscode.window.showOpenDialog({
+          canSelectFolders: true,
+          canSelectFiles: false,
+          canSelectMany: false,
+          openLabel: 'Select Work Directory',
+        });
+        if (!uris2 || uris2.length === 0) return;
+        addWorkDirectory(uris2[0].fsPath);
+        this.webview?.postMessage({
+          type: 'settingsLoaded',
+          workDirectories: readConfig().workDirectories,
+        });
+      } else if (message.type === 'removeWorkDirectory') {
+        removeWorkDirectory(message.path as string);
+        this.webview?.postMessage({
+          type: 'settingsLoaded',
+          workDirectories: readConfig().workDirectories,
         });
       } else if (message.type === 'importLayout') {
         const uris = await vscode.window.showOpenDialog({
