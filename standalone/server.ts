@@ -17,6 +17,7 @@ import { readLayoutFromFile, writeLayoutToFile } from '../src/layoutPersistence.
 import { getTranscriptPath, loadTranscript } from '../src/transcriptLoader.js';
 
 import { broadcast, createWsBridge, send } from './wsBridge.js';
+import { loadExternalCharacters, loadExternalFurniture } from './externalAssets.js';
 import type { StandaloneSettings } from './settings.js';
 import { readSettings, writeSettings } from './settings.js';
 
@@ -129,7 +130,42 @@ function loadJsonAsset(filename: string): unknown {
 function sendAllAssets(ws?: WebSocket): void {
   const sendFn = ws ? (msg: Record<string, unknown>) => send(ws, msg) : (msg: Record<string, unknown>) => broadcast(wss, msg);
 
-  const characters = loadJsonAsset('characters.json');
+  // Bundled characters (pre-decoded JSON)
+  let characters = loadJsonAsset('characters.json') as { characters: unknown[] } | null;
+
+  // Bundled furniture
+  let furnitureCatalog = loadJsonAsset('furniture-catalog.json') as Record<string, unknown>[] | null;
+  let furnitureSprites = loadJsonAsset('furniture.json') as Record<string, string[][]> | null;
+
+  // Merge external assets from configured directories
+  const cfg = readConfig();
+  for (const dir of cfg.externalAssetDirectories) {
+    if (!dir || typeof dir !== 'string') continue;
+
+    const extChars = loadExternalCharacters(dir);
+    if (extChars && characters) {
+      characters = {
+        characters: [...(characters as unknown as { characters: unknown[] }).characters, ...extChars.characters],
+      };
+    } else if (extChars) {
+      characters = extChars as unknown as { characters: unknown[] };
+    }
+
+    const extFurniture = loadExternalFurniture(dir);
+    if (extFurniture) {
+      if (furnitureCatalog) {
+        furnitureCatalog = [...furnitureCatalog, ...extFurniture.catalog];
+      } else {
+        furnitureCatalog = extFurniture.catalog;
+      }
+      if (furnitureSprites) {
+        furnitureSprites = { ...furnitureSprites, ...extFurniture.sprites };
+      } else {
+        furnitureSprites = extFurniture.sprites;
+      }
+    }
+  }
+
   if (characters) sendFn({ type: 'characterSpritesLoaded', characters });
 
   const floors = loadJsonAsset('floors.json');
@@ -138,8 +174,6 @@ function sendAllAssets(ws?: WebSocket): void {
   const walls = loadJsonAsset('walls.json');
   if (walls) sendFn({ type: 'wallTilesLoaded', sets: walls });
 
-  const furnitureSprites = loadJsonAsset('furniture.json');
-  const furnitureCatalog = loadJsonAsset('furniture-catalog.json');
   if (furnitureSprites && furnitureCatalog) {
     sendFn({ type: 'furnitureAssetsLoaded', catalog: furnitureCatalog, sprites: furnitureSprites });
   }
