@@ -35,3 +35,4 @@ playwright-report/
 
 # Local notes (not for commit)
 /notes/
+.playwright-mcp/

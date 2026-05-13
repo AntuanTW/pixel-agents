@@ -187,8 +187,7 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
 
   switch (type) {
     case 'webviewReady': {
-      const sdkAgents = agentRunner.getAllAgents().map(a => agentRunner.toPersistedAgent(a));
-      reply({ type: 'sdkExistingAgents', agents: sdkAgents });
+      // Send settings + assets first so office is initialized, then agents
       reply({ type: 'settingsLoaded',
         soundEnabled: settings.soundEnabled,
         lastSeenVersion: settings.lastSeenVersion,
@@ -203,6 +202,8 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
         legacyAgentCount: 0,
       });
       sendAllAssets(ws);
+      const sdkAgents = agentRunner.getAllAgents().map(a => agentRunner.toPersistedAgent(a));
+      reply({ type: 'sdkExistingAgents', agents: sdkAgents });
       break;
     }
 
@@ -442,9 +443,11 @@ async function main(): Promise<void> {
   });
 
   wss = createWsBridge(httpServer, handleMessage, (ws) => {
+    // Send assets + layout FIRST so the office is initialized,
+    // then restore agents so characters can be created.
+    sendAllAssets(ws);
     const sdkAgents = agentRunner.getAllAgents().map(a => agentRunner.toPersistedAgent(a));
     send(ws, { type: 'sdkExistingAgents', agents: sdkAgents });
-    sendAllAssets(ws);
   });
 
   httpServer.listen(PORT, () => {
