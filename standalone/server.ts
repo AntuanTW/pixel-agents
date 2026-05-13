@@ -385,6 +385,8 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
           writeConfig(cfg);
         }
         reply({ type: 'externalAssetDirectoriesUpdated', dirs: cfg.externalAssetDirectories });
+        // Re-send merged assets so the webview picks up new characters/furniture
+        sendAllAssets();
       }
       break;
     }
@@ -396,6 +398,8 @@ async function handleMessage(type: string, payload: Record<string, unknown>, ws:
         cfg.externalAssetDirectories = cfg.externalAssetDirectories.filter(d => d !== dirPath);
         writeConfig(cfg);
         reply({ type: 'externalAssetDirectoriesUpdated', dirs: cfg.externalAssetDirectories });
+        // Re-send bundled-only assets so removed external ones disappear
+        sendAllAssets();
       }
       break;
     }
